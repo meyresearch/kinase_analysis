@@ -1,0 +1,12 @@
+.ipynb_checkpoints/
+ftraj_abl1/
+ftraj_egfr/
+human_abl1/
+human_egfr/
+test_DFG/
+__pycache__/
+
+log
+
+*.npy
+
