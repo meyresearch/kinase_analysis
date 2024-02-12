@@ -1,13 +1,15 @@
 import deeptime as dt 
 from deeptime.decomposition import TICA
 from deeptime.clustering import KMeans
-from deeptime.markov.msm import MaximumLikelihoodMSM
+from deeptime.markov.msm import MaximumLikelihoodMSM, BayesianMSM
 from deeptime.decomposition import VAMP
+from deeptime.util.validation import implied_timescales
 
 import pyemma as pm
 from pyemma.coordinates import tica as pm_tica
 from pyemma.coordinates import cluster_kmeans
 
+import mdtraj as md
 from typing import *
 import numpy as np
 from addict import Dict as Adict
@@ -17,6 +19,9 @@ from pathlib import Path
 import time
 import h5py
 import pandas as pd
+
+ftraj_dir = Path('ftraj_egfr')
+ftraj_files = natsorted([ftraj for ftraj in ftraj_dir.rglob('run*-clone?_dunbrack.npy')])
 
 def objective(trial) -> Tuple[float, float]:
     start_time = time.time()
@@ -30,7 +35,7 @@ def objective(trial) -> Tuple[float, float]:
     rng = np.random.default_rng(seed)
 
     hp_dict = define_hpdict(trial)
-    ftrajs_all = get_data(hp_dict)
+    ftrajs_all, _ = get_data(hp_dict)
 
     ftraj_lens = [x.shape[0] for x in ftrajs_all]
     ixs = [bootstrap(ftraj_lens, rng) for _ in range(n_boot)]
@@ -49,15 +54,22 @@ def objective(trial) -> Tuple[float, float]:
     return res0, res1, res2, res3
 
 
-def get_data(hp_dict) -> List[np.ndarray]:  
+def get_data(hp_dict) -> (List[np.ndarray], Dict[int, int]):
     ftraj_dir = Path('ftraj_egfr')
-    ftraj_f = natsorted([ftraj for ftraj in ftraj_dir.rglob('run*-clone?_dunbrack.npy')])
-    ftrajs = [np.load(file) for file in ftraj_f if np.load(file).shape[0]>hp_dict.trajlen__cutoff]
+    ftraj_files = natsorted([ftraj for ftraj in ftraj_dir.rglob('run*-clone?_dunbrack.npy')])
+
+    ftrajs = []
+    traj_mapping = {}
+    for file in ftraj_files:
+        ftraj = np.load(file)
+        if ftraj.shape[0] > hp_dict.trajlen__cutoff:
+            ftrajs.append(ftraj)
+            traj_mapping[len(ftrajs)-1] = ftraj_files.index(file)
     print(f'Loaded {len(ftrajs)} ftrajs.')
 
     # Convert angles to cos and sin 
     data = [np.concatenate([np.concatenate([np.cos(ftraj[:,3:]), np.sin(ftraj[:,3:])], axis=1), ftraj[:,0:3]], axis=1) for ftraj in ftrajs]
-    return data
+    return data, traj_mapping
 
 
 def bootstrap(lengths: np.ndarray, rng: np.random.Generator) -> List[np.ndarray]:
@@ -132,3 +144,67 @@ def estimate_msm(ix, ftrajs_all, hp_dict, seed, markov_lag, score_k):
     t3_gap = t3/t4
 
     return t2, t3, t2_gap, t3_gap
+
+
+def its_convergence(dtrajs: List[np.ndarray], lagtimes=[1,10,50,100,200,500,1000], n_samples=10):
+    models = []
+    for lagtime in tqdm(lagtimes, total=len(lagtimes)):
+        models.append(BayesianMSM(n_samples, lagtime=lagtime).fit(dtrajs).fit_fetch(dtrajs))
+    its_data = implied_timescales(models)
+
+    return its_data
+
+
+def sample_states_by_distribution(microstate_distribution, n_samples) -> List[np.ndarray]:
+    state_indices = np.random.choice(len(microstate_distribution), size=n_samples, p=microstate_distribution)
+    counts = np.bincount(state_indices)
+    state_samples_count = {i:count for i, count in enumerate(counts) if count!=0}
+    return state_samples_count
+
+
+def save_sampled_conf(state_samples_count, frame_of_states, traj_mapping, ftraj_files, traj_dir, save_dir):
+    """
+    state_samples_count: dict
+        The number of samples to be picked from each state
+    frame_of_states: dict
+        The indices of the states; use compte_index_states
+    traj_mapping: dict
+        The mapping of the filtered ftraj indices to the original ftraj indices 
+    ftraj_files: list
+        The list of the ftraj file names
+    traj_dir: Path
+        The directory of the trajectory files
+    save_dir: Path
+        The directory to save the sampled frames
+    """
+
+    # Pick the samples from the states
+    state_samples_idx = {}
+    for state, no in state_samples_count.items():
+        indicies = np.random.randint(len(frame_of_states[state]), size=no)
+        state_samples_idx[state] = [frame_of_states[state][id,:] for id in indicies]
+
+    # Remove the state indicies
+    samples = []
+    for sample in state_samples_idx.values():
+        samples.extend(sample)
+
+    # Map the filtered ftrajs indices to original traj file names
+    trajs_frames = {}
+    for sample in samples:
+        ftraj_idx, t = sample[0], sample[1]
+        ftraj_name = ftraj_files[traj_mapping[ftraj_idx]]
+        traj_name = traj_dir.joinpath(ftraj_name.stem.split('_')[0]+'.h5')
+        if traj_name in trajs_frames:
+            trajs_frames[traj_name].append(t)
+        else:
+            trajs_frames[traj_name] = [t]
+    
+    # Load, slice, concatenate, and save the frames
+    print('Loading trajectories')
+    frames = [] 
+    for traj_name, ind in tqdm(trajs_frames.items(), total=len(trajs_frames)):
+        frames.append(md.load(traj_name)[ind])
+    sampled_frames = md.join(frames)
+    sampled_frames.save(save_dir)
+    return None
