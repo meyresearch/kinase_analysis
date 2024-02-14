@@ -159,6 +159,7 @@ def sample_states_by_distribution(microstate_distribution, n_samples) -> List[np
     state_indices = np.random.choice(len(microstate_distribution), size=n_samples, p=microstate_distribution)
     counts = np.bincount(state_indices)
     state_samples_count = {i:count for i, count in enumerate(counts) if count!=0}
+
     return state_samples_count
 
 
@@ -205,6 +206,8 @@ def save_sampled_conf(state_samples_count, frame_of_states, traj_mapping, ftraj_
     frames = [] 
     for traj_name, ind in tqdm(trajs_frames.items(), total=len(trajs_frames)):
         frames.append(md.load(traj_name)[ind])
-    sampled_frames = md.join(frames)
+    if len(frames)>1:
+        sampled_frames = md.join(frames)
     sampled_frames.save(save_dir)
-    return None
+
+    return frames
