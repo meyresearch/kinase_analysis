@@ -21,33 +21,37 @@ if __name__ == "__main__":
     save_dir = Path('/home/rzhu/Desktop/projects/kinase_analysis/data_egfr/ftrajs/')
     if not save_dir.exists(): save_dir.mkdir(parents=True, exist_ok=True)
 
-    ref = md.load('/arc/egfr_equilibrated_strucs/RUN0_solute_equilibrated.pdb')
-    backbone_atomids = ref.topology.select('backbone')
+    # No need to align to a reference structure as all the features are internal degrees of freedoms
+    # ref = md.load('/arc/egfr_equilibrated_strucs/RUN0_solute_equilibrated.pdb')
     
     featurisers = [dbdist_featuriser, dbdihed_featuriser, aloop_featuriser, ploop_featuriser, achelix_featuriser, rspine_featuriser]
     print(f'Featurisers: {[f.__name__ for f in featurisers]}')
 
     # Loop over runs
     try:
-        for i in tqdm(range(max_run_no), total=max_run_no):
+        for i in tqdm(range(max_run_no+1), total=max_run_no+1):
             trajs = natsorted([p for p in traj_dir.rglob(f'run{i}-clone?.h5')])
             print(f'Run {i}: {len(trajs)} trajectories to be featurised.')
 
             # Loop over clones
             for traj in trajs:
+                md_traj = None
                 print('Featurising', traj.stem)
-                try:
-                    md_traj = md.load(traj)
-                    md_traj = md_traj.superpose(ref, atom_indices=backbone_atomids)
-                except:
-                    print(f'!!! Fail to read {traj} !!!')
-                    continue
 
                 for featuriser in featurisers:
                     ftraj_dir = save_dir.joinpath(f"{traj.stem}_{featuriser.__name__.split('_')[0]}.npy")
                     if ftraj_dir.is_file():
                         print(traj.stem, f"{featuriser.__name__.split('_')[0]} ftraj already exist.")
                         continue
+
+                    if md_traj is None:
+                        try:
+                            md_traj = md.load(traj)
+                            # md_traj = md_traj.superpose(ref, atom_indices=md_traj.topology.select('backbone'), ref_atom_indices=ref.topology.select('backbone'))
+                        except:
+                            print(f'!!! Fail to read {traj} !!!')
+                            break
+
                     try:
                         _ = featuriser(md_traj, save_to_disk=ftraj_dir)
                         print('Featurised', traj.stem, f"{featuriser.__name__.split('_')[0]} ftraj.")
