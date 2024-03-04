@@ -1,17 +1,15 @@
 .ipynb_checkpoints/
 __pycache__/
-visualisastion/
 
 ftraj_abl1/
 ftraj_egfr/
 human_abl1/
 human_egfr/
 test_DFG/
-test_egfr_trajs/
-test_abl_trajs/
 archived/
+data_egfr/ftrajs
 
-log
-
+log_*
+test*
 *.npy
 
