@@ -94,12 +94,7 @@ def define_hpdict(trial, study_name, trial_key) -> Dict:
     assert hp_dict.trajlen__cutoff >= hp_dict.cluster__stride
 
     hp_df = pd.DataFrame(hp_dict, index=[trial.number])
-    if Path(f'data_egfr/msm/{study_name}.h5').exists():
-        with h5py.File(f'data_egfr/msm/{study_name}_hps.h5', 'r') as file:
-            if f'{study_name}_hps' in file:
-                hp_all = pd.read_hdf(f'data/{study_name}.h5', key=f'{trial_key}_hps')
-                hp_df = pd.concat([hp_all, hp_df], ignore_index=True)
-    hp_df.to_hdf(f'data_egfr/msm/{study_name}.h5', key=f'{trial_key}_hps', mode='w')
+    hp_df.to_hdf(f'data_egfr/msm/{study_name}.h5', key=f'{trial_key}_hps', mode='a', format='table', append=True, data_columns=True)
 
     return hp_dict
 

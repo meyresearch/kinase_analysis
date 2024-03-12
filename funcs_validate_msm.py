@@ -49,6 +49,9 @@ def sample_frames_by_features(ftrajs_list: List[List[np.ndarray]], ftraj_range_l
     return samples
 
 
+def sample_f
+
+
 def sample_states_by_distribution(microstate_distribution, n_samples) -> List[np.ndarray]:
     state_indices = np.random.choice(len(microstate_distribution), size=n_samples, p=microstate_distribution)
     counts = np.bincount(state_indices)
@@ -61,7 +64,7 @@ def save_samples(samples, traj_files, save_dir, reference=None):
     frames = [] 
     for sample in samples:
         sample_frame = md.load_frame(traj_files[sample[0]], index=sample[1])
-        sample_frame = sample_frame.atom_slice(sample_frame.top.select('not hydrogen'))
+        sample_frame = sample_frame.atom_slice(sample_frame.top.select('mass>1.1'))
         frames.append(sample_frame)
     if len(frames)>1:
         sampled_frames = md.join(frames)

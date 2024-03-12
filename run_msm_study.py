@@ -19,7 +19,7 @@ study = optuna.load_study(study_name=study_name, storage=storage_name)
 print(len(study.trials))
 
 objective = partial(objective, study_name=study_name, trial_key=trial_key, markov_lag=markov_lag, features=features, ftraj_dir=ftraj_dir)
-study.optimize(objective, n_trials=100, catch=(ValueError,))
+study.optimize(objective, n_trials=18, catch=(ValueError,))
 print('Sampling finished.')
 print(len(study.trials))
 
