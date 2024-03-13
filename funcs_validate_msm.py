@@ -6,6 +6,7 @@ from deeptime.clustering import KMeans
 from deeptime.markov.msm import MaximumLikelihoodMSM, BayesianMSM
 from deeptime.decomposition import VAMP
 from deeptime.util.validation import implied_timescales
+from deeptime.markov.sample import *
 
 import pyemma as pm
 from pyemma.coordinates import tica as pm_tica
@@ -31,7 +32,27 @@ def its_convergence(dtrajs: List[np.ndarray], lagtimes=[1,10,50,100,200,500,1000
     return its_data
 
 
-def sample_frames_by_features(ftrajs_list: List[List[np.ndarray]], ftraj_range_list: List[List[Tuple[float,float]]], n_samples: int) -> List[np.ndarray]:
+def sample_frames_by_features(ftrajs_list: List[List[np.ndarray]], ftraj_range_list: List[List[Tuple[float,float]]], n_samples: int, mapping=None) -> np.ndarray:
+    """
+    Sample frames from the feature trajectories according to the feature ranges
+
+    Parameters
+    ----------
+    ftrajs_list: list of list of ndarray( (n_i, m) )
+        Featurised trajectories
+    ftraj_range_list: list of list of tuple( (2) )
+        The lower and upper boundary of the corresponding features to sample from
+    n_samples: int
+        The number of samples to be taken from the 
+    mapping: dict
+        The mapping from the filtered traj indices to the original indices
+
+    Returns
+    -------
+    samples: ndarray( (n_samples, 2) )
+        For each sample, the trajectory index and frame index.    
+    """
+    
     assert len(ftrajs_list)==len(ftraj_range_list), 'The number of features and their ranges do not match'
     
     masks = []
@@ -46,13 +67,28 @@ def sample_frames_by_features(ftrajs_list: List[List[np.ndarray]], ftraj_range_l
         frames_to_sample_from.extend([[i, j] for j in true_indices])
     samples = np.array(frames_to_sample_from)[np.random.choice(range(len(frames_to_sample_from)), n_samples)]
 
+    if mapping is not None: samples = _map_to_original_trajs(samples, mapping)
+
     return samples
 
 
-def sample_f
+def sample_states_by_distribution(microstate_distribution, n_samples) -> Dict[int, int]:
+    """
+    Decide how many sample to take from states according to the microstate distribution
 
+    Parameters
+    ----------
+    microstate_distribution: ndarray( (n) )
+        A distribution over microstates to sample from
+    n_samples: int
+        The number of samples to be taken
+    
+    Returns
+    -------
+    state_samples_count: dict
+        The states to sampled from : the number of samples to be taken
+    """
 
-def sample_states_by_distribution(microstate_distribution, n_samples) -> List[np.ndarray]:
     state_indices = np.random.choice(len(microstate_distribution), size=n_samples, p=microstate_distribution)
     counts = np.bincount(state_indices)
     state_samples_count = {i:count for i, count in enumerate(counts) if count!=0}
@@ -60,7 +96,40 @@ def sample_states_by_distribution(microstate_distribution, n_samples) -> List[np
     return state_samples_count
 
 
+def sample_frames_by_states(state_samples_count, dtrajs, mapping=None) -> List[np.ndarray]:
+    """
+    Sample frames from the states according to the state_samples_count
+
+    Parameters
+    ----------
+    state_samples_count: dict
+        The states to sampled from : the number of samples to be taken
+    dtrajs: list of ndarray( (n_i) )
+        Discretised trajectories of states
+    mapping: dict
+        The mapping from the filtered indices to the original indices
+
+    Returns
+    -------
+    samples: ndarray( (n_samples, 2) )
+        For each sample, the trajectory index and frame index. 
+    """
+
+    index_states = compute_index_states(dtrajs)
+    samples = []
+    for state_to_sample_from, n_samples in state_samples_count.items():
+        samples.append(np.array(index_states[state_to_sample_from])[np.random.choice(range(len(index_states[state_to_sample_from])), n_samples)])
+    samples = np.concatenate(samples)
+    if mapping is not None: samples = _map_to_original_trajs(samples, mapping)
+
+    return samples
+
+
 def save_samples(samples, traj_files, save_dir, reference=None):
+    """
+    Combine and save sampled frames to disk
+    """
+
     frames = [] 
     for sample in samples:
         sample_frame = md.load_frame(traj_files[sample[0]], index=sample[1])
@@ -75,51 +144,9 @@ def save_samples(samples, traj_files, save_dir, reference=None):
     return None
 
 
-def save_sampled_conf(state_samples_count, frame_of_states, traj_mapping, ftraj_files, traj_dir, save_dir):
+def _map_to_original_trajs(samples, traj_mapping) -> List[np.ndarray]:
     """
-    state_samples_count: dict
-        The number of samples to be picked from each state
-    frame_of_states: dict
-        The indices of the states; use compute_index_states
-    traj_mapping: dict
-        The mapping of the filtered ftraj indices to the original ftraj indices 
-    ftraj_files: list
-        The list of the ftraj file names
-    traj_dir: Path
-        The directory of the trajectory files
-    save_dir: Path
-        The directory to save the sampled frames
+    Map the sampled filtered trajectory indices to the original trajectory indices
     """
-
-    # Pick the samples from the states
-    state_samples_idx = {}
-    for state, no in state_samples_count.items():
-        indicies = np.random.randint(len(frame_of_states[state]), size=no)
-        state_samples_idx[state] = [frame_of_states[state][id,:] for id in indicies]
-
-    # Remove the state indicies
-    samples = []
-    for sample in state_samples_idx.values():
-        samples.extend(sample)
-
-    # Map the filtered ftrajs indices to original traj file names
-    trajs_frames = {}
-    for sample in samples:
-        ftraj_idx, t = sample[0], sample[1]
-        ftraj_name = ftraj_files[traj_mapping[ftraj_idx]]
-        traj_name = traj_dir.joinpath(ftraj_name.stem.split('_')[0]+'.h5')
-        if traj_name in trajs_frames:
-            trajs_frames[traj_name].append(t)
-        else:
-            trajs_frames[traj_name] = [t]
-    
-    # Load, slice, concatenate, and save the frames
-    print('Loading trajectories')
-    frames = [] 
-    for traj_name, ind in tqdm(trajs_frames.items(), total=len(trajs_frames)):
-        frames.append(md.load(traj_name)[ind])
-    if len(frames)>1:
-        sampled_frames = md.join(frames)
-    sampled_frames.save(save_dir)
-
-    return frames
+    samples_mapped = [(traj_mapping[sample[0]], sample[1]) for sample in samples]
+    return np.array(samples_mapped)
