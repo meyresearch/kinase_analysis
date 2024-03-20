@@ -11,7 +11,6 @@ from addict import Dict as Adict
 from natsort import natsorted
 from tqdm import tqdm
 import time
-import h5py
 import pandas as pd
 from pathlib import Path
 
@@ -44,8 +43,61 @@ def objective(trial, study_name, trial_key, markov_lag, ftrajs_all, cutoff) -> T
     return res0, res1, res2, res3
 
 
-def get_data(trajlen__cutoff, features, ftraj_dir) -> Tuple[List[np.ndarray], Dict[int, int]]:
+def get_data(trajlen_cutoff, features, ftraj_dir) -> Tuple[List[np.ndarray], Dict[int, int]]:
     # Load selected feature trajectories
+
+    ftrajs_to_load = []
+    mapping = {}
+    old_to_new_mapping = {}
+
+    for i, feature in enumerate(features):
+        assert feature in ['dbdist', 'dbdihed', 'aloop', 'ploop', 'achelix', 'rspine'], 'Feature not recognised.'
+        ftraj_files = natsorted([str(ftraj) for ftraj in ftraj_dir.rglob(f'run*-clone?_{feature}.npy')])
+        print("Loading feature: ", feature)
+
+        for old_idx, ftraj_file in tqdm(enumerate(ftraj_files), total=len(ftraj_files)):
+            ftraj = np.load(ftraj_file, allow_pickle=True)
+            
+            # Process feature specific adjustments
+            if 'dihed' in feature:
+                ftraj = np.concatenate([np.cos(ftraj), np.sin(ftraj)], axis=1)
+
+            # For the first loaded feature, check the trajectory length
+            if i == 0:
+                if ftraj.shape[0] > trajlen_cutoff:
+                    ftrajs_to_load.append(ftraj)
+                    mapping[len(ftrajs_to_load)-1] = old_idx
+                    old_to_new_mapping[old_idx] = len(ftrajs_to_load)-1
+            else:
+                # For subsequent features, concatenate with existing trajectories
+                # Ensure to match the length criteria before adding
+                if ftraj.shape[0] > trajlen_cutoff:
+                    existing_ftraj = ftrajs_to_load[old_to_new_mapping[old_idx]]
+                    combined_ftraj = np.hstack([existing_ftraj, ftraj])
+                    ftrajs_to_load[old_to_new_mapping[old_idx]] = combined_ftraj
+
+    print(f'Loaded number of ftrajs: {len(ftrajs_to_load)}')
+    
+    '''
+    for i, feature in enumerate(features):
+        assert feature in ['aloop', 'dbdist', 'dbdihed', 'ploop', 'achelix', 'rspine'], 'Feature not recognised.'
+        ftraj_files = natsorted([str(ftraj) for ftraj in ftraj_dir.rglob(f'run*-clone?_{feature}.npy')])
+        print(feature)
+        if i == 0:
+            ftrajs_cat = [np.load(ftraj_file, allow_pickle=True) for ftraj_file in ftraj_files]
+
+            # Remove trajectories with length less than the cutoff
+            # Meanwhile create a mapping from the new indices to the old indices
+            ftrajs_len = np.array([ftraj.shape[0] for ftraj in ftrajs_cat])
+            ftrajs_len_mask = ftrajs_len > trajlen__cutoff
+            ftrajs_cat = [ftrajs_cat[i] for i in range(len(ftrajs_cat)) if ftrajs_len_mask[i]]
+            mapping = {new_idx: old_idx for new_idx, old_idx in enumerate(np.where(ftrajs_len_mask == 1)[0])}
+        else:
+            ftraj_files = [ftraj_files[i] for i in range(len(ftraj_files)) if ftrajs_len_mask[i]]
+            ftrajs_new = [np.load(ftraj_file, allow_pickle=True) for ftraj_file in ftraj_files]
+            if 'dihed' in feature: ftrajs_new = [np.concatenate([np.cos(ftraj), np.sin(ftraj)], axis=1) for ftraj in ftrajs_new]
+            ftrajs_cat = [np.hstack([ftraj, ftraj_new]) for ftraj, ftraj_new in zip(ftrajs_cat, ftrajs_new)]
+
     ftrajs_all = []
     for feature in features:
         assert feature in ['dbdist', 'dbdihed', 'aloop', 'ploop', 'achelix', 'rspine'], 'Feature not recognised.'
@@ -58,15 +110,13 @@ def get_data(trajlen__cutoff, features, ftraj_dir) -> Tuple[List[np.ndarray], Di
     print(f'Total number of ftrajs: {len(ftrajs_all[0])}.')
     ftrajs_cat = [np.concatenate([lst[i] for lst in ftrajs_all], axis=1).astype(np.float32) for i in range(len(ftrajs))]
     del ftrajs_all
-    #ftrajs_cat = [ftraj.astype(np.float32) for ftraj in ftrajs_cat]
+    
 
-    # Remove trajectories with length less than the cutoff
-    # Meanwhile create a mapping from the new indices to the old indices
     ftrajs_len = np.array([ftraj.shape[0] for ftraj in ftrajs_cat])
     ftrajs_len_mask = ftrajs_len > trajlen__cutoff
-    ftrajs_to_load = [ftrajs_cat[i] for i in range(len(ftrajs_cat)) if ftrajs_len_mask[i]]
+    ftraj_to_load = [ftrajs_cat[i] for i in range(len(ftrajs_cat)) if ftrajs_len_mask[i]]
     mapping = {new_idx: old_idx for new_idx, old_idx in enumerate(np.where(ftrajs_len_mask == 1)[0])}
-    print(f'Loaded number of ftrajs:  {len(ftrajs_to_load)}')
+    '''
 
     return ftrajs_to_load, mapping
 
