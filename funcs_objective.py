@@ -18,7 +18,7 @@ from pathlib import Path
 def objective(trial, study_name, trial_key, markov_lag, ftrajs_all, cutoff) -> Tuple[float, float, float, float]:
     start_time = time.time()
 
-    n_boot = 20
+    n_boot = 10
     seed = 49587
     score_k = 2
     fitting_func = estimate_msm
@@ -133,11 +133,11 @@ def bootstrap(lengths: np.ndarray, rng: np.random.Generator) -> List[np.ndarray]
 def define_hpdict(trial, study_name, trial_key, cutoff) -> Dict: 
     hp_dict = Adict()
     hp_dict.trial__no = trial.number
-    hp_dict.tica__lag = trial.suggest_int('tica__lag', 1, 100)
-    hp_dict.tica__dim = trial.suggest_int('tica__dim', 2, 20)
+    hp_dict.tica__lag = trial.suggest_int('tica__lag', 5, 100)
+    hp_dict.tica__dim = trial.suggest_int('tica__dim', 5, 50)
     hp_dict.tica__stride = 10
     hp_dict.trajlen__cutoff = cutoff
-    hp_dict.cluster__k = trial.suggest_int('cluster__k', 500, 1500)
+    hp_dict.cluster__k = trial.suggest_int('cluster__k', 8000, 12000)
     hp_dict.cluster__maxiter = 1000
     hp_dict.cluster__stride = 100
 

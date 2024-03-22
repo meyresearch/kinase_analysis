@@ -135,8 +135,8 @@ def achelix_featuriser(traj, save_to_disk=None) -> np.ndarray:
 
 def rspine_featuriser(traj, save_to_disk=None) -> np.ndarray:
     ########## phosphate-binding loop distances ############
-    # d1 = dist(Cg-Leu777, Sd-M766) 
-    # d2 = dist(Cg-Phe856, Sd-M766) 
+    # d1 = dist(Cg-Leu777, Sd-Met766) 
+    # d2 = dist(Cg-Phe856, Sd-Met766) 
     ########################################################
     top = traj.topology
 
