@@ -300,7 +300,7 @@ mol delrep 0 top
 mol representation NewCartoon 0.300000 10.000000 4.100000 0
 mol color ColorID 30
 mol selection {all}
-mol material AOChalky
+mol material Transparent
 mol addrep top
 mol selupdate 0 top 0
 mol colupdate 0 top 0
@@ -366,15 +366,15 @@ mol clipplane color  5 1 top {0.5 0.5 0.5 }
 mol clipplane normal 5 1 top {0.0 0.0 1.0}
 mol clipplane status 5 1 top {0}
 mol rename top ac_samples_a.pdb
-set viewpoints([molinfo top]) {{{1 0 0 -9.18238} {0 1 0 -46.4857} {0 0 1 -7.09741} {0 0 0 1}} {{-0.678917 -0.334473 -0.653608 0} {0.576042 0.309324 -0.756637 0} {0.455251 -0.890194 -0.017334 0} {0 0 0 1}} {{0.0495881 0 0 0} {0 0.0495881 0 0} {0 0 0.0495881 0} {0 0 0 1}} {{1 0 0 0} {0 1 0 0} {0 0 1 0} {0 0 0 1}}}
+set viewpoints([molinfo top]) {{{1 0 0 -9.18238} {0 1 0 -46.4857} {0 0 1 -7.09741} {0 0 0 1}} {{-0.605692 -0.470546 -0.641662 0} {0.526506 0.36763 -0.766581 0} {0.596605 -0.802145 0.0250758 0} {0 0 0 1}} {{0.0412904 0 0 0} {0 0.0412904 0 0} {0 0 0.0412904 0} {0 0 0 1}} {{1 0 0 0} {0 1 0 0} {0 0 1 0} {0 0 0 1}}}
 lappend viewplist [molinfo top]
-# done with molecule 17
+# done with molecule 3
 mol new /home/rzhu/Desktop/projects/kinase_analysis/data_egfr/samples/ac_samples_b.pdb type pdb first 0 last -1 step 1 filebonds 1 autobonds 1 waitfor all
 mol delrep 0 top
 mol representation NewCartoon 0.300000 10.000000 4.100000 0
 mol color ColorID 23
 mol selection {all}
-mol material AOChalky
+mol material Transparent
 mol addrep top
 mol selupdate 0 top 0
 mol colupdate 0 top 0
@@ -440,15 +440,15 @@ mol clipplane color  5 1 top {0.5 0.5 0.5 }
 mol clipplane normal 5 1 top {0.0 0.0 1.0}
 mol clipplane status 5 1 top {0}
 mol rename top ac_samples_b.pdb
-set viewpoints([molinfo top]) {{{1 0 0 -9.18238} {0 1 0 -46.4857} {0 0 1 -7.09741} {0 0 0 1}} {{-0.678917 -0.334473 -0.653608 0} {0.576042 0.309324 -0.756637 0} {0.455251 -0.890194 -0.017334 0} {0 0 0 1}} {{0.0495881 0 0 0} {0 0.0495881 0 0} {0 0 0.0495881 0} {0 0 0 1}} {{1 0 0 0} {0 1 0 0} {0 0 1 0} {0 0 0 1}}}
+set viewpoints([molinfo top]) {{{1 0 0 -9.18238} {0 1 0 -46.4857} {0 0 1 -7.09741} {0 0 0 1}} {{-0.605692 -0.470546 -0.641662 0} {0.526506 0.36763 -0.766581 0} {0.596605 -0.802145 0.0250758 0} {0 0 0 1}} {{0.0412904 0 0 0} {0 0.0412904 0 0} {0 0 0.0412904 0} {0 0 0 1}} {{1 0 0 0} {0 1 0 0} {0 0 1 0} {0 0 0 1}}}
 lappend viewplist [molinfo top]
-# done with molecule 18
+# done with molecule 4
 mol new /home/rzhu/Desktop/projects/kinase_analysis/data_egfr/samples/ac_samples_c.pdb type pdb first 0 last -1 step 1 filebonds 1 autobonds 1 waitfor all
 mol delrep 0 top
 mol representation NewCartoon 0.300000 10.000000 4.100000 0
 mol color ColorID 32
 mol selection {all}
-mol material AOChalky
+mol material Transparent
 mol addrep top
 mol selupdate 0 top 0
 mol colupdate 0 top 0
@@ -514,10 +514,10 @@ mol clipplane color  5 1 top {0.5 0.5 0.5 }
 mol clipplane normal 5 1 top {0.0 0.0 1.0}
 mol clipplane status 5 1 top {0}
 mol rename top ac_samples_c.pdb
-set viewpoints([molinfo top]) {{{1 0 0 -9.18238} {0 1 0 -46.4857} {0 0 1 -7.09741} {0 0 0 1}} {{-0.678917 -0.334473 -0.653608 0} {0.576042 0.309324 -0.756637 0} {0.455251 -0.890194 -0.017334 0} {0 0 0 1}} {{0.0495881 0 0 0} {0 0.0495881 0 0} {0 0 0.0495881 0} {0 0 0 1}} {{1 0 0 0} {0 1 0 0} {0 0 1 0} {0 0 0 1}}}
+set viewpoints([molinfo top]) {{{1 0 0 -9.18238} {0 1 0 -46.4857} {0 0 1 -7.09741} {0 0 0 1}} {{-0.605692 -0.470546 -0.641662 0} {0.526506 0.36763 -0.766581 0} {0.596605 -0.802145 0.0250758 0} {0 0 0 1}} {{0.0412904 0 0 0} {0 0.0412904 0 0} {0 0 0.0412904 0} {0 0 0 1}} {{1 0 0 0} {0 1 0 0} {0 0 1 0} {0 0 0 1}}}
 lappend viewplist [molinfo top]
 set topmol [molinfo top]
-# done with molecule 19
+# done with molecule 5
 foreach v $viewplist {
   molinfo $v set {center_matrix rotate_matrix scale_matrix global_matrix} $viewpoints($v)
 }
@@ -567,6 +567,7 @@ color scale colors turbo {0.0 0.0 0.0} {0.0 0.0 0.0} {0.0 0.0 0.0}
 color scale colors CET_R2 {0.0 0.0 0.0} {0.0 0.0 0.0} {0.0 0.0 0.0}
   color scale method RWB
   set colorcmds {
+    {color Display {Background} white}
     {color Display {BackgroundTop} black}
     {color Display {BackgroundBot} blue2}
     {color Display {FPS} white}
@@ -685,31 +686,17 @@ color scale colors CET_R2 {0.0 0.0 0.0} {0.0 0.0 0.0} {0.0 0.0 0.0}
     {color Segname {A} blue}
     {color Conformation {all} blue}
     {color Molecule {0} blue}
+    {color Molecule {dfg_in_samples.pdb} gray}
     {color Molecule {1} red}
+    {color Molecule {dfg_inter_samples.pdb} gray}
     {color Molecule {2} gray}
+    {color Molecule {dfg_out_samples.pdb} gray}
     {color Molecule {3} orange}
-    {color Molecule {test_out_run2_egfr.pdb} red}
+    {color Molecule {ac_samples_a.pdb} orange}
     {color Molecule {4} yellow}
-    {color Molecule {test_out_run1_abl.pdb} silver}
+    {color Molecule {ac_samples_b.pdb} yellow}
     {color Molecule {5} green}
-    {color Molecule {6} white}
-    {color Molecule {7} pink}
-    {color Molecule {8} cyan}
-    {color Molecule {9} purple}
-    {color Molecule {10} lime}
-    {color Molecule {11} mauve}
-    {color Molecule {12} ochre}
-    {color Molecule {13} iceblue}
-    {color Molecule {egfr_example.pdb} lime}
-    {color Molecule {abl_example.pdb} mauve}
-    {color Molecule {14} yellow3}
-    {color Molecule {ac_in_samples.pdb} ochre}
-    {color Molecule {15} green3}
-    {color Molecule {ac_out_samples.pdb} iceblue}
-    {color Molecule {16} cyan3}
-    {color Molecule {17} blue2}
-    {color Molecule {18} blue3}
-    {color Molecule {19} violet}
+    {color Molecule {ac_samples_c.pdb} tan}
     {color Structure {3_10_Helix} blue}
     {color Surface {Grasp} gray}
     {color Labels {Springs} orange}

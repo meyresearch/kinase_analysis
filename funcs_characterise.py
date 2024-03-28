@@ -87,3 +87,8 @@ def save_example_with_property(ref_path, property, save_path):
         residue.atoms.tempfactors = p
     with mda.Writer(save_path, multiframe=False) as W:
         W.write(ref)
+
+
+
+##################################
+
