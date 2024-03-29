@@ -5,6 +5,7 @@ from pyemma.coordinates import tica as pm_tica
 from pyemma.coordinates import cluster_kmeans
 from deeptime.markov.msm import MaximumLikelihoodMSM
 
+import gc
 from typing import *
 import numpy as np
 from addict import Dict as Adict
@@ -122,7 +123,7 @@ def _bootstrap(lengths: np.ndarray, rng: np.random.Generator) -> List[np.ndarray
     probs = lengths/np.sum(lengths)
     ix = np.arange(len(lengths))
     probs[-1] = 1 - np.sum(probs[0:-1])
-    new_ix = rng.choice(ix,size=len(lengths), p=probs, replace=True)
+    new_ix = rng.choice(ix, size=len(lengths), p=probs, replace=True)
 
     return new_ix
 
@@ -157,12 +158,17 @@ def _estimate_msm(hp_dict, ftrajs, i, study_name, save_dir):
 
     kmeans_mod.clustercenters.dump(save_dir/f'{hp_dict.hp_id}'/f'bs_{i}_kmeans_centers.npy')
     msm_mod.transition_matrix.dump(save_dir/f'{hp_dict.hp_id}'/f'bs_{i}_msm_tmat.npy')
-
+    
     result = pd.DataFrame(hp_dict, index=['0'])
     result['bs'] = i
     result['t2'] = msm_mod.timescales()[0]
-    result['gap'] = msm_mod.timescales()[0]/msm_mod.timescales()[1]
+    result['gap2'] = msm_mod.timescales()[0]/msm_mod.timescales()[1]
+    result['ev2'] = msm_mod.eigenvalues()[1]
+    result['vamp2'] = msm_mod.score(dtrajs, r=2)
+
+    del ttrajs, dtrajs
 
     result.to_hdf(save_dir/f'{study_name}.h5', key=f'result_raw', mode='a', format='table', append=True, data_columns=True)
+    gc.collect()
 
     return None

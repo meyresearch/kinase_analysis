@@ -100,6 +100,22 @@ def aloop_featuriser(traj, save_to_disk=None) -> np.ndarray:
     return distances
 
 
+def ploopdihed_featuriser(traj, save_to_disk=None) -> np.ndarray:
+    ########## phosphate-binding dihedral angles ############
+    # Compute the phi and psi angles from LYS716 to LYS728
+    ########################################################
+    top = traj.topology
+    ILE715_C = find_atomid(top, 'ILE715-C')
+    GLY729_N = find_atomid(top, 'GLY729-N')
+
+    ploop = traj.atom_slice(traj.topology.select(f'index {ILE715_C} to {GLY729_N}'))
+    phi = md.compute_phi(ploop)[1]
+    psi = md.compute_psi(ploop)[1]
+    dihedrals = np.concatenate([phi, psi], axis=1)
+    if save_to_disk is not None: np.save(save_to_disk, dihedrals)
+    return dihedrals
+
+
 def ploop_featuriser(traj, save_to_disk=None) -> np.ndarray:
     ########## phosphate-binding loop distances ############
     # d1 = dist(Cα-Leu718, Cα-Phe723) * maybe use Gly724 because it's conserved

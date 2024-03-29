@@ -1,8 +1,10 @@
 from typing import *
 from pathlib import Path
+import gc
 
 from funcs_build_msm import *
 
+gc.enable()
 hyperparameters = {'trajlen__cutoff': [1000],
                     'n__boot': [10], 
                     'seed': [49587],
@@ -15,7 +17,9 @@ hyperparameters = {'trajlen__cutoff': [1000],
                     'markov__lag': [100]}
 features = ['dbdist', 'dbdihed', 'aloop', 'ploop', 'achelix', 'rspine']
 ftraj_dir = Path('data_egfr/ftrajs')
-study_name = 'how_many_clusters'
-save_dir = Path('data_egfr/msm/how_many_clusters/')
+#study_name = 'how_many_clusters'
+#save_dir = Path('data_egfr/msm/how_many_clusters/')
+study_name = 'test'
+save_dir = Path('data_egfr/msm/test/')
 
 run_study(hyperparameters, features, ftraj_dir, study_name, save_dir, add_to_exist_study=False)
