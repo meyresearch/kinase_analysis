@@ -70,11 +70,10 @@ def bootstrap_hp_trial(hp_dict, ftrajs_all, study_name, save_dir:Path):
     else:
         ftraj_ixs = [_bootstrap(ftraj_lens, rng) for _ in range(n_boot)]
 
-    results = []
     for i, ix in tqdm(enumerate(ftraj_ixs), total=n_boot):
         print('\nBootstrap: ', i)
         ftrajs = [ftrajs_all[i] for i in ix]
-        results.append(fitting_func(hp_dict, ftrajs, i, study_name, save_dir))
+        fitting_func(hp_dict, ftrajs, i, study_name, save_dir)
 
     print('Time elapsed: ', time.time() - start_time)
 
@@ -89,7 +88,7 @@ def get_data(trajlen_cutoff, features, ftraj_dir) -> Tuple[List[np.ndarray], Dic
     old_to_new_mapping = {}
 
     for i, feature in enumerate(features):
-        assert feature in ['dbdist', 'dbdihed', 'aloop', 'ploop', 'achelix', 'rspine'], 'Feature not recognised.'
+        assert feature in ['dbdist', 'dbdihed', 'aloop', 'ploopdihed', 'achelix'], 'Feature not recognised.'
         ftraj_files = natsorted([str(ftraj) for ftraj in ftraj_dir.rglob(f'run*-clone?_{feature}.npy')])
         print("Loading feature: ", feature)
 
@@ -152,10 +151,12 @@ def _kmeans(hp_dict: Dict, ttrajs: List[np.ndarray], seed: int):
 
 
 def _estimate_msm(hp_dict, ftrajs, i, study_name, save_dir):
+    print('Estimating MSM: ', i)
     ttrajs, tica_mod = _tica(hp_dict, ftrajs)
     dtrajs, kmeans_mod = _kmeans(hp_dict, ttrajs, hp_dict.seed)
     msm_mod = MaximumLikelihoodMSM(reversible=True).fit_fetch(dtrajs, lagtime=hp_dict.markov__lag)
 
+    print('Saving results')
     kmeans_mod.clustercenters.dump(save_dir/f'{hp_dict.hp_id}'/f'bs_{i}_kmeans_centers.npy')
     msm_mod.transition_matrix.dump(save_dir/f'{hp_dict.hp_id}'/f'bs_{i}_msm_tmat.npy')
     
