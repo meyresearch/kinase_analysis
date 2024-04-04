@@ -72,6 +72,12 @@ def bootstrap_hp_trial(hp_dict, ftrajs_all, study_name, save_dir:Path):
 
     for i, ix in tqdm(enumerate(ftraj_ixs), total=n_boot):
         print('\nBootstrap: ', i)
+        f_kmeans = save_dir/f'{hp_dict.hp_id}'/f'bs_{i}_kmeans_centers.npy'
+        f_tmat = save_dir/f'{hp_dict.hp_id}'/f'bs_{i}_msm_tmat.npy'
+        if f_kmeans.is_file() and f_tmat.is_file(): 
+            print('Already exist')
+            continue
+
         ftrajs = [ftrajs_all[i] for i in ix]
         fitting_func(hp_dict, ftrajs, i, study_name, save_dir)
 
@@ -88,7 +94,7 @@ def get_data(trajlen_cutoff, features, ftraj_dir) -> Tuple[List[np.ndarray], Dic
     old_to_new_mapping = {}
 
     for i, feature in enumerate(features):
-        assert feature in ['dbdist', 'dbdihed', 'aloop', 'ploopdihed', 'achelix'], 'Feature not recognised.'
+        assert feature in ['dbdist', 'dbdihed', 'aloop', 'ploopdihed', 'achelix', 'rspine'], 'Feature not recognised.'
         ftraj_files = natsorted([str(ftraj) for ftraj in ftraj_dir.rglob(f'run*-clone?_{feature}.npy')])
         print("Loading feature: ", feature)
 
