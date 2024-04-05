@@ -163,8 +163,8 @@ def _estimate_msm(hp_dict, ftrajs, i, study_name, save_dir):
     msm_mod = MaximumLikelihoodMSM(reversible=True).fit_fetch(dtrajs, lagtime=hp_dict.markov__lag)
 
     print('Saving results')
-    np.save(kmeans_mod.clustercenters, save_dir/f'{hp_dict.hp_id}'/f'bs_{i}_kmeans_centers.npy')
-    np.save(msm_mod.transition_matrix, save_dir/f'{hp_dict.hp_id}'/f'bs_{i}_msm_tmat.npy')
+    np.save(save_dir/f'{hp_dict.hp_id}'/f'bs_{i}_kmeans_centers.npy', kmeans_mod.clustercenters)
+    np.save(save_dir/f'{hp_dict.hp_id}'/f'bs_{i}_msm_tmat.npy', msm_mod.transition_matrix)
 
     result = pd.DataFrame(hp_dict, index=['0'])
     result['bs'] = i
