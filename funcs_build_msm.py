@@ -75,7 +75,7 @@ def bootstrap_hp_trial(hp_dict, ftrajs_all, study_name, save_dir:Path):
         f_kmeans = save_dir/f'{hp_dict.hp_id}'/f'bs_{i}_kmeans_centers.npy'
         f_tmat = save_dir/f'{hp_dict.hp_id}'/f'bs_{i}_msm_tmat.npy'
         if f_kmeans.is_file() and f_tmat.is_file(): 
-            print('Already exist')
+            print('Already exist. Continue')
             continue
 
         ftrajs = [ftrajs_all[i] for i in ix]
@@ -163,19 +163,19 @@ def _estimate_msm(hp_dict, ftrajs, i, study_name, save_dir):
     msm_mod = MaximumLikelihoodMSM(reversible=True).fit_fetch(dtrajs, lagtime=hp_dict.markov__lag)
 
     print('Saving results')
-    kmeans_mod.clustercenters.dump(save_dir/f'{hp_dict.hp_id}'/f'bs_{i}_kmeans_centers.npy')
-    msm_mod.transition_matrix.dump(save_dir/f'{hp_dict.hp_id}'/f'bs_{i}_msm_tmat.npy')
-    
+    np.save(kmeans_mod.clustercenters, save_dir/f'{hp_dict.hp_id}'/f'bs_{i}_kmeans_centers.npy')
+    np.save(msm_mod.transition_matrix, save_dir/f'{hp_dict.hp_id}'/f'bs_{i}_msm_tmat.npy')
+
     result = pd.DataFrame(hp_dict, index=['0'])
     result['bs'] = i
-    result['t2'] = msm_mod.timescales()[0]
-    result['gap2'] = msm_mod.timescales()[0]/msm_mod.timescales()[1]
-    result['ev2'] = msm_mod.eigenvalues()[1]
-    result['vamp2'] = msm_mod.score(dtrajs, r=2)
-
-    del ttrajs, dtrajs
-
+    for i in range(20):
+        result[f't{i+2}'] = msm_mod.timescales()[i]
+        #result[f'vamp2_{i+2}'] = msm_mod.score(dtrajs, r=i+2)
+        #result[f'vamp2eq_{i+2}'] = sum(msm_mod.eigenvalues(i+2)**2)
+        result[f'gap_{i+2}'] = msm_mod.timescales()[i]/msm_mod.timescales()[i+1]
     result.to_hdf(save_dir/f'{study_name}.h5', key=f'result_raw', mode='a', format='table', append=True, data_columns=True)
+    
+    del ttrajs, dtrajs
     gc.collect()
 
     return None
