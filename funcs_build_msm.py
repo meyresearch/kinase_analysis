@@ -38,6 +38,7 @@ def run_study(hyperparameters, features, ftraj_dir, study_name, save_dir:Path, a
     return None
 
 
+
 def write_hps(hyperparameters, save_dir, study_name, add_to_exist_study=False):
     combinations = list(itertools.product(*hyperparameters.values()))
     hp_table = pd.DataFrame(combinations, columns=hyperparameters.keys())
@@ -74,10 +75,12 @@ def bootstrap_hp_trial(hp_dict, ftrajs_all, study_name, save_dir:Path):
         print('\nBootstrap: ', i)
         f_kmeans = save_dir/f'{hp_dict.hp_id}'/f'bs_{i}_kmeans_centers.npy'
         f_tmat = save_dir/f'{hp_dict.hp_id}'/f'bs_{i}_msm_tmat.npy'
-        if f_kmeans.is_file() and f_tmat.is_file(): 
+        f_ix = save_dir/f'{hp_dict.hp_id}'/f'bs_{i}_traj_indices.npy'
+        if f_kmeans.is_file() and f_tmat.is_file() and f_ix.is_file(): 
             print('Already exist. Continue')
             continue
 
+        np.save(f_ix, ix)
         ftrajs = [ftrajs_all[i] for i in ix]
         fitting_func(hp_dict, ftrajs, i, study_name, save_dir)
 
