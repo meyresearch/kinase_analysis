@@ -4,10 +4,12 @@
 from pyemma.coordinates import tica as pm_tica
 from pyemma.coordinates import cluster_kmeans
 from deeptime.markov.msm import MaximumLikelihoodMSM
+from deeptime.markov import TransitionCountEstimator
 
 import gc
 from typing import *
 import numpy as np
+import scipy
 from addict import Dict as Adict
 from natsort import natsorted
 from tqdm import tqdm
@@ -159,11 +161,19 @@ def _kmeans(hp_dict: Dict, ttrajs: List[np.ndarray], seed: int):
     return dtrajs, kmeans_mod
 
 
+def _is_sparse(matrix):
+    row_check = np.any(np.all(matrix == 0, axis=1))
+    col_check = np.any(np.all(matrix == 0, axis=0))
+    return row_check or col_check 
+
+
 def _estimate_msm(hp_dict, ftrajs, i, study_name, save_dir):
     print('Estimating MSM: ', i)
     ttrajs, tica_mod = _tica(hp_dict, ftrajs)
     dtrajs, kmeans_mod = _kmeans(hp_dict, ttrajs, hp_dict.seed)
-    msm_mod = MaximumLikelihoodMSM(reversible=True).fit_fetch(dtrajs, lagtime=hp_dict.markov__lag)
+
+    count_mod = TransitionCountEstimator(lagtime=hp_dict.markov__lag, count_mode='sliding', sparse=True)
+    msm_mod = MaximumLikelihoodMSM(reversible=True, allow_disconnected=True).fit_fetch(count_mod)
 
     print('Saving results')
     np.save(save_dir/f'{hp_dict.hp_id}'/f'bs_{i}_kmeans_centers.npy', kmeans_mod.clustercenters)
@@ -171,6 +181,7 @@ def _estimate_msm(hp_dict, ftrajs, i, study_name, save_dir):
 
     result = pd.DataFrame(hp_dict, index=['0'])
     result['bs'] = i
+    result['is_sparse'] = _is_sparse(count_mod.count_matrix.to_array())
     for i in range(20):
         result[f't{i+2}'] = msm_mod.timescales()[i]
         #result[f'vamp2_{i+2}'] = msm_mod.score(dtrajs, r=i+2)
