@@ -182,9 +182,9 @@ def _estimate_msm(hp_dict, ftrajs, i, study_name, save_dir):
 
     results = []
     results.append(hp_dict.hp_id)
-    results.append(f'{i}')
+    results.append(i)
     results.append(msm_mod.transition_matrix.shape[0] != hp_dict.cluster__k)
-    results.extend(msm_mod.timescales()[n_score])
+    results.extend(msm_mod.timescales()[0:n_score])
     results.extend(msm_mod.timescales()[0:n_score]/msm_mod.timescales()[1:n_score+1])
     results.extend([sum(msm_mod.eigenvalues(i+2)**2) for i in range(n_score)])
     data = pd.DataFrame({k:v for k,v in zip(columns, results)}, index=[0])
