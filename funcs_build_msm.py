@@ -172,7 +172,7 @@ def _estimate_msm(hp_dict, ftrajs, i, study_name, save_dir):
     ttrajs, tica_mod = _tica(hp_dict, ftrajs)
     dtrajs, kmeans_mod = _kmeans(hp_dict, ttrajs, hp_dict.seed)
 
-    count_mod = TransitionCountEstimator(lagtime=hp_dict.markov__lag, count_mode='sliding', sparse=True)
+    count_mod = TransitionCountEstimator(lagtime=hp_dict.markov__lag, count_mode='sliding', sparse=True).fit_fetch(dtrajs)
     msm_mod = MaximumLikelihoodMSM(reversible=True, allow_disconnected=True).fit_fetch(count_mod)
 
     print('Saving results')
@@ -181,7 +181,7 @@ def _estimate_msm(hp_dict, ftrajs, i, study_name, save_dir):
 
     result = pd.DataFrame(hp_dict, index=['0'])
     result['bs'] = i
-    result['is_sparse'] = _is_sparse(count_mod.count_matrix.to_array())
+    result['is_sparse'] = _is_sparse(count_mod.count_matrix.toarray())
     for i in range(20):
         result[f't{i+2}'] = msm_mod.timescales()[i]
         #result[f'vamp2_{i+2}'] = msm_mod.score(dtrajs, r=i+2)
