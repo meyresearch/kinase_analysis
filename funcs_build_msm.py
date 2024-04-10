@@ -169,25 +169,30 @@ def _is_sparse(matrix):
 
 def _estimate_msm(hp_dict, ftrajs, i, study_name, save_dir):
     print('Estimating MSM: ', i)
+    n_score = 20
+    columns = ['hp_id'] + ['bs'] + ['is_sparse'] + [f't{i+2}' for i in range(n_score)] \
+            + [f'gap_{i+2}' for i in range(n_score)] \
+            + [f'vamp2eq_{i+2}' for i in range(n_score)]
+
     ttrajs, tica_mod = _tica(hp_dict, ftrajs)
     dtrajs, kmeans_mod = _kmeans(hp_dict, ttrajs, hp_dict.seed)
 
     count_mod = TransitionCountEstimator(lagtime=hp_dict.markov__lag, count_mode='sliding', sparse=True).fit_fetch(dtrajs)
     msm_mod = MaximumLikelihoodMSM(reversible=True, allow_disconnected=True).fit_fetch(count_mod)
 
+    results = []
+    results.append(hp_dict.hp_id)
+    results.append(f'{i}')
+    results.append(msm_mod.transition_matrix.shape[0] != hp_dict.cluster__k)
+    results.extend(msm_mod.timescales()[n_score])
+    results.extend(msm_mod.timescales()[0:n_score]/msm_mod.timescales()[1:n_score+1])
+    results.extend([sum(msm_mod.eigenvalues(i+2)**2) for i in range(n_score)])
+    data = pd.DataFrame({k:v for k,v in zip(columns, results)}, index=[0])
+
     print('Saving results')
     np.save(save_dir/f'{hp_dict.hp_id}'/f'bs_{i}_kmeans_centers.npy', kmeans_mod.clustercenters)
     np.save(save_dir/f'{hp_dict.hp_id}'/f'bs_{i}_msm_tmat.npy', msm_mod.transition_matrix)
-
-    result = pd.DataFrame(hp_dict, index=['0'])
-    result['bs'] = i
-    result['is_sparse'] = _is_sparse(count_mod.count_matrix.toarray())
-    for i in range(20):
-        result[f't{i+2}'] = msm_mod.timescales()[i]
-        #result[f'vamp2_{i+2}'] = msm_mod.score(dtrajs, r=i+2)
-        #result[f'vamp2eq_{i+2}'] = sum(msm_mod.eigenvalues(i+2)**2)
-        result[f'gap_{i+2}'] = msm_mod.timescales()[i]/msm_mod.timescales()[i+1]
-    result.to_hdf(save_dir/f'{study_name}.h5', key=f'result_raw', mode='a', format='table', append=True, data_columns=True)
+    data.to_hdf(save_dir/f'{study_name}.h5', key=f'result_raw', mode='a', format='table', append=True, data_columns=True)
     
     del ttrajs, dtrajs
     gc.collect()
