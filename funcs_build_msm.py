@@ -177,8 +177,8 @@ def _estimate_msm(hp_dict, ftrajs, i, study_name, save_dir):
     ttrajs, tica_mod = _tica(hp_dict, ftrajs)
     dtrajs, kmeans_mod = _kmeans(hp_dict, ttrajs, hp_dict.seed)
 
-    count_mod = TransitionCountEstimator(lagtime=hp_dict.markov__lag, count_mode='sliding', sparse=True).fit_fetch(dtrajs)
-    msm_mod = MaximumLikelihoodMSM(reversible=True, allow_disconnected=True).fit_fetch(count_mod)
+    count_mod = TransitionCountEstimator(lagtime=hp_dict.markov__lag, count_mode='sliding').fit_fetch(dtrajs)
+    msm_mod = MaximumLikelihoodMSM(reversible=True).fit_fetch(count_mod)
 
     results = []
     results.append(hp_dict.hp_id)
