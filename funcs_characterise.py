@@ -10,7 +10,21 @@ import os
 
 def cal_within_state_rmsd(sample, atom_selection='mass>1.1 and backbone') -> Tuple[np.ndarray, np.ndarray]:
     """
-    Compute the residue-wise RMSD wihtin a state
+    Compute the residue-wise RMSD wihtin a set of conformations 
+
+    Parameters
+    ----------
+    sample: mdtraj.Trajectory
+        A set of conformations as a trajectory
+    atom_selection: str
+        Select the atoms whose coordinates are used to compute RMSD. Default non-hydrogen atoms of the protein 
+    
+    Returns
+    -------
+    rmsd_mean: ndarray
+        The vector of residue-wise RMSD means within a state
+    rmsd_std: ndarray 
+        The vector of residue-wise RMSD standard deviations within a state
     """
     
     no_res = len([_ for _ in sample.top.residues])
@@ -38,7 +52,21 @@ def cal_within_state_rmsd(sample, atom_selection='mass>1.1 and backbone') -> Tup
 
 def cal_between_states_rmsd(sample_a, sample_b, atom_selection='mass>1.1 and backbone') -> Tuple[np.ndarray, np.ndarray]:
     """
-    Compute the residue-wise RMSD between two states 
+    Compute the residue-wise RMSD between two sets of conformations  
+    
+    Parameters
+    ----------
+    sample_a, sample_b: mdtraj.Trajectory 
+        Two sets of conformations as trajectories
+    atom_selection: str
+        Select the atoms whose coordinates are used to compute RMSD. Default non-hydrogen atoms of the protein 
+    
+    Returns
+    -------
+    rmsd_mean: ndarray
+        The vector of residue-wise RMSD means across state
+    rmsd_std: ndarray 
+        The vector of residue-wise standard deviation across state
     """
 
     no_res_a = len([_ for _ in sample_a.top.residues])
@@ -67,28 +95,43 @@ def cal_between_states_rmsd(sample_a, sample_b, atom_selection='mass>1.1 and bac
     return np.array(rmsd_mean), np.array(rmsd_std)
 
 
-def cal_between_states_diff(mean_AB, std_A, std_B, normalise=True):
+def cal_between_states_diff(mean_ab, std_a, std_b, normalise=True):
     """
     Scale the residue-wise RMSD between two states by standard deviations
+
+    Parameters
+    ----------
+    mean_ab: ndarray
+        The vector of residue-wise mean values 
+    std_a, std_b: ndarray
+        The vector of residue-wise std within state a/b
+    normalise: bool
+        Rescale to scores to 0-1 
     """
 
-    score = np.array(mean_AB)/(np.array(std_A)*np.array(std_B))
+    score = np.array(mean_ab)/(np.array(std_a)*np.array(std_b))
     if normalise: score = (score-np.min(score))/(np.max(score)-np.min(score))
     return score
 
 
-def save_example_with_property(ref_path, property, save_path):
+def save_example_with_property(sample_dir, property, save_dir):
     """
     Save the reference structure with the a computed property as the B-factors
+
+    Parameters
+    ----------
+    sample_dir: str
+        Path to sample structures 
+    property: ndarray
+        A residue-wise property to save as B-factor
+    save_dir: str
+        Path to saved sample structures 
     """
 
-    ref = mda.Universe(ref_path)
-    for residue, p in zip(ref.residues, property):
+    samples = mda.Universe(sample_dir)
+    ag = samples.select_atoms('protein')
+    for residue, p in zip(samples.residues, property):
         residue.atoms.tempfactors = p
-    with mda.Writer(save_path, multiframe=False) as W:
-        W.write(ref)
-
-
-
-##################################
-
+    with mda.Writer(save_dir, ag.n_atoms, multiframe=True) as W:
+        for sample in samples.trajectory:
+            W.write(ag)
