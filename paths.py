@@ -7,6 +7,9 @@ raw_traj_files = natsorted([traj for traj in raw_traj_dir.glob('run*-clone?.h5')
 traj_dir = Path('/arc/egfr_processed')
 traj_files = natsorted([traj for traj in traj_dir.rglob('run*-clone?.h5')])
 
+top_dir = Path('/arc/egfr_equilibrated_strucs')
+top_files = natsorted([traj for traj in top_dir.rglob('RUN*_solute_equilibrated.pdb')])
+
 ftraj_dir = Path('data_egfr/ftrajs')
 ftraj_dist_files = natsorted([ftraj for ftraj in ftraj_dir.rglob('run*-clone?_dbdist.npy')])
 ftraj_dihed_files = natsorted([ftraj for ftraj in ftraj_dir.rglob('run*-clone?_dbdihed.npy')])

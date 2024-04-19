@@ -99,7 +99,7 @@ def get_data(trajlen_cutoff, features, ftraj_dir) -> Tuple[List[np.ndarray], Dic
     old_to_new_mapping = {}
 
     for i, feature in enumerate(features):
-        assert feature in ['dbdist', 'dbdihed', 'aloop', 'ploopdihed', 'achelix', 'rspine'], 'Feature not recognised.'
+        #assert feature in ['dbdist', 'dbdihed', 'aloop', 'ploopdihed', 'achelix', 'rspine', 'aloopdssp', 'achelixdssp'], 'Feature not recognised.'
         ftraj_files = natsorted([str(ftraj) for ftraj in ftraj_dir.rglob(f'run*-clone?_{feature}.npy')])
         print("Loading feature: ", feature)
 
@@ -110,6 +110,10 @@ def get_data(trajlen_cutoff, features, ftraj_dir) -> Tuple[List[np.ndarray], Dic
             if 'dihed' in feature:
                 ftraj = np.concatenate([np.cos(ftraj), np.sin(ftraj)], axis=1)
 
+            # Ensure that the feature trajectory is 2D
+            if ftraj.ndim == 1:
+                ftraj = ftraj[:, np.newaxis]
+                
             # For the first loaded feature, check the trajectory length
             if i == 0:
                 if ftraj.shape[0] > trajlen_cutoff:

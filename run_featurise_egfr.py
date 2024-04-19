@@ -24,7 +24,7 @@ if __name__ == "__main__":
     # No need to align to a reference structure as all the features are internal degrees of freedoms
     # ref = md.load('/arc/egfr_equilibrated_strucs/RUN0_solute_equilibrated.pdb')
     
-    featurisers = [ploopdihed_featuriser]
+    featurisers = [aloopdssp_featuriser, achelixdssp_featuriser, achelixdihed_featuriser]
     print(f'Featurisers: {[f.__name__ for f in featurisers]}')
 
     # Loop over runs
