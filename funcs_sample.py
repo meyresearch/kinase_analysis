@@ -99,6 +99,18 @@ def sample_frames_by_states(state_samples_count, dtrajs, mapping=None) -> List[n
     return samples
 
 
+def simulated_traj_to_samples(traj_of_states, dtrajs, mapping=None) -> np.ndarray:
+
+    index_states = compute_index_states(dtrajs)
+    samples = []
+    for state in traj_of_states:
+        samples.append(np.array(index_states[state])[np.random.choice(range(len(index_states[state])), 1)])
+    samples = np.concatenate(samples)
+    if mapping is not None: samples = _map_to_original_trajs(samples, mapping)
+
+    return samples
+
+
 def save_samples(samples, traj_files, save_dir, reference=None):
     """
     Combine and save sampled frames to disk

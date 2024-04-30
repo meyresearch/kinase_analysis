@@ -165,6 +165,61 @@ def rspine_featuriser(traj, save_to_disk=None) -> np.ndarray:
     return distances
 
 
+def aloopdssp_featuriser(traj, save_to_disk=None) -> np.ndarray:
+    ########## Activation loop secondary structure ############
+    # Secondary structure assignment of activation loop
+    ###########################################################
+    top = traj.topology
+
+    asp855_id = np.where([str(res) == 'ASP855' for res in top.residues])[0][0]
+    pro877_id = np.where([str(res) == 'PRO877' for res in top.residues])[0][0]
+    aloop_traj = traj.atom_slice(top.select(f'resid {asp855_id} to {pro877_id}'))   
+    
+    dssp = md.compute_dssp(aloop_traj)
+    #fraction_of_helix = np.mean(dssp == 'H', axis=1)
+
+    if save_to_disk is not None: np.save(save_to_disk, dssp)
+    return dssp
+
+
+def achelixdssp_featuriser(traj, save_to_disk=None) -> np.ndarray:
+    ########## alpha-C helix secondary structure ################
+    # Secondary structure assignment of alpha-C helix
+    # Alpha-C helix is defined as 
+    # LYS757 to SER768
+    #############################################################
+    top = traj.topology
+
+    LYS757_id = np.where([str(res) == 'LYS757' for res in top.residues])[0][0]
+    SER768_id = np.where([str(res) == 'SER768' for res in top.residues])[0][0]   
+    achelix_traj = traj.atom_slice(top.select(f'resid {LYS757_id} to {SER768_id}'))   
+    
+    dssp = md.compute_dssp(achelix_traj)
+    #fraction_of_helix = np.mean(dssp == 'H', axis=1)
+
+    if save_to_disk is not None: np.save(save_to_disk, dssp)
+    return dssp
+
+
+def achelixdihed_featuriser(traj, save_to_disk=None) -> np.ndarray:
+    ########## alpha-C helix secondary structure ################
+    # Dihedral angles of alpha-C helix
+    # Alpha-C helix is defined as 
+    # LYS757 to SER768
+    #############################################################
+    top = traj.topology
+    LYS757_C = find_atomid(top, 'LYS757-C')
+    SER768_N = find_atomid(top, 'SER768-N')
+
+    achelix = traj.atom_slice(traj.topology.select(f'index {LYS757_C} to {SER768_N}'))
+    phi = md.compute_phi(achelix)[1]
+    psi = md.compute_psi(achelix)[1]
+    dihedrals = np.concatenate([phi, psi], axis=1)
+
+    if save_to_disk is not None: np.save(save_to_disk, dihedrals)
+    return dihedrals
+
+
 def featurise(featurisers: List, traj: md.Trajectory) -> np.ndarray:
     assert type(traj) == md.Trajectory
     

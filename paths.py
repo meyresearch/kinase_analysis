@@ -10,6 +10,9 @@ traj_files = natsorted([traj for traj in traj_dir.rglob('run*-clone?.h5')])
 top_dir = Path('/arc/egfr_equilibrated_strucs')
 top_files = natsorted([traj for traj in top_dir.rglob('RUN*_solute_equilibrated.pdb')])
 
+pdb_dir = Path('/arc/human_egfr')
+pdb_files = natsorted([pdb for pdb in pdb_dir.rglob('*.pdb')])
+
 ftraj_dir = Path('data_egfr/ftrajs')
 ftraj_dist_files = natsorted([ftraj for ftraj in ftraj_dir.rglob('run*-clone?_dbdist.npy')])
 ftraj_dihed_files = natsorted([ftraj for ftraj in ftraj_dir.rglob('run*-clone?_dbdihed.npy')])

@@ -57,7 +57,8 @@ def plot_ev(ev, c_centers, traj_all, traj_weights, title, savedir, dim_1=0, dim_
     fe_cax.set_ylabel('Free energy (kT)', fontsize=14)
     fe_cax.yaxis.set_label_position("left")
 
-    plt.savefig(savedir, transparent=True, bbox_inches='tight', dpi=300)
+    if savedir is not None:
+        plt.savefig(savedir, transparent=True, bbox_inches='tight', dpi=300)
     plt.show()
 
     return None
@@ -76,7 +77,8 @@ def plot_fe(traj_all, traj_weights, savedir, cmap='nipy_spectral', plot_c_center
     ax.set_ylabel(f'tIC {dim_2+1}', fontsize=14)
     cbar.ax.set_ylabel('Free energy (kT)', fontsize=14)
 
-    plt.savefig(savedir, transparent=True, bbox_inches='tight', dpi=300)
+    if savedir is not None:
+        plt.savefig(savedir, transparent=True, bbox_inches='tight', dpi=300)
     plt.show()
 
     return None
@@ -104,7 +106,8 @@ def plot_ts(timescales, n_ts, markov_lag, savedir, scaling=0.001, unit="$\mathrm
     ax.set_xlabel(r"Timescale Index", fontsize=14)
     ax.tick_params(bottom=True, top=False, left=True, right=False)
 
-    plt.savefig(savedir, transparent=True, bbox_inches='tight', dpi=300)
+    if savedir is not None:
+        plt.savefig(savedir, transparent=True, bbox_inches='tight', dpi=300)
     plt.show()
 
     return None
@@ -132,7 +135,8 @@ def plot_pcca(state_assignment, c_centers, savedir, dim_1=0, dim_2=1, \
     cbar_ax.tick_params(labelsize=12)
     cbar_ax.set_ylabel('Macrostate', fontsize=14)
 
-    plt.savefig(savedir, transparent=True, bbox_inches='tight', dpi=300)
+    if savedir is not None:
+        plt.savefig(savedir, transparent=True, bbox_inches='tight', dpi=300)
     plt.show()
 
     return None
@@ -165,7 +169,8 @@ def plot_mfpt_matrix(mfpt, savedir, scaling=0.001, unit="$\mathrm{\mu s}$", text
     cbar.ax.tick_params(labelsize=16)
     cbar.ax.set_ylabel(rf"State$_i$ --> State$_j$ MFPT ({unit})", fontsize=16)
 
-    plt.savefig(savedir, transparent=True, bbox_inches='tight', dpi=300)
+    if savedir is not None:
+        plt.savefig(savedir, transparent=True, bbox_inches='tight', dpi=300)
     plt.show()
 
     return None
