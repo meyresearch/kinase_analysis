@@ -11,8 +11,11 @@ data_egfr/ftrajs
 plots/movie
 
 *.bmp
+*.bmp.bmp
 *.npz
 *.npy
+*.dcd
+
 log_*
 test*
 
