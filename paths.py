@@ -1,6 +1,7 @@
 from pathlib import Path
 from natsort import natsorted
 
+# EGFR
 raw_traj_dir = Path('/arc/EGFR/')
 raw_traj_files = natsorted([traj for traj in raw_traj_dir.glob('run*-clone?.h5')])
 
@@ -25,3 +26,4 @@ assert len(traj_files) == len(ftraj_dist_files) == len(ftraj_dihed_files)== len(
     == len(ftraj_ploop_files) == len(ftraj_achelix_files) == len(ftraj_rspine_files), \
          'The number of trajectories and their features do not match'
 
+# Abl

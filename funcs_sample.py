@@ -123,6 +123,8 @@ def save_samples(samples, traj_files, save_dir, reference=None):
         frames.append(sample_frame)
     if len(frames)>1:
         sampled_frames = md.join(frames)
+    else:
+        sampled_frames = frames[0]
     if reference is not None:
         sampled_frames = sampled_frames.superpose(reference)
     sampled_frames.save(save_dir)
