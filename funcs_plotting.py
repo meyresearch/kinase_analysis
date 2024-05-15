@@ -65,14 +65,82 @@ def plot_ev(ev, c_centers, traj_all, traj_weights, title, savedir, dim_1=0, dim_
 
 
 
-def plot_fe(traj_all, traj_weights, savedir, cmap='nipy_spectral', plot_c_centers=True, \
+def plot_fe(traj_all, traj_weights, savedir, fes_cmap='nipy_spectral', 
             dim_1 = 0, dim_2 = 1, \
-            c_centers=None, c_centers_s=3, c_centers_marker='.', c_centers_a=0.5, c_centers_c='black'):
+            c_centers=None, d_centers=None, 
+            c_centers_s=10, c_centers_marker='.', c_centers_a=0.8, c_centers_c='black',
+            d_centers_s=10, d_centers_marker='X', d_centers_a=0.8, d_centers_c='black', d_edgecolor='white', d_linewidth=1,
+            state_assignment=None, pcca_cmap='gist_rainbow', edgecolor='black', linewidth=1,
+            legend_marker_sizes=100):
     
     fig, ax = plt.subplots(figsize=(7, 6))
-    ax, contour, cbar = plot_energy2d(energy2d(traj_all[:, dim_1], traj_all[:, dim_2], weights=traj_weights), ax=ax, contourf_kws=dict(cmap=cmap))
-    if plot_c_centers: 
+    ax, contour, cbar = plot_energy2d(energy2d(traj_all[:, dim_1], traj_all[:, dim_2], weights=traj_weights), ax=ax, contourf_kws=dict(cmap=fes_cmap))
+    
+    if state_assignment is not None:
+        n_states = len(np.unique(state_assignment))
+        colours = [plt.cm.get_cmap(pcca_cmap)(i/(n_states-1)) for i in range(n_states)]
+        for i in range(n_states):
+            ax.scatter(c_centers[state_assignment == i, dim_1], c_centers[state_assignment == i, dim_2], 
+                       s=c_centers_s, c=colours[i], marker=c_centers_marker, alpha=c_centers_a, 
+                       edgecolor=edgecolor, linewidth=linewidth,
+                       label=f'macrostate {i+1}')
+        legend = plt.legend(markerscale=1, loc='best', fontsize=10)
+        
+    if (state_assignment is  None) and (c_centers is not None): 
         ax.scatter(c_centers[:,dim_1], c_centers[:,dim_2], s=c_centers_s, c=c_centers_c, marker=c_centers_marker, alpha=c_centers_a)
+    
+    if d_centers is not None:
+        ax.scatter(d_centers[:,dim_1], d_centers[:,dim_2], s=d_centers_s, c=d_centers_c, marker=d_centers_marker, alpha=d_centers_a, 
+                   edgecolor=d_edgecolor, linewidth=d_linewidth, label='disconnected states')
+        legend = plt.legend(markerscale=1, loc='best', fontsize=10)
+
+    ax.set_xlabel(f'tIC {dim_1+1}', fontsize=14)
+    ax.set_ylabel(f'tIC {dim_2+1}', fontsize=14)
+    cbar.ax.set_ylabel('Free energy (kT)', fontsize=14)
+
+    if type(legend_marker_sizes) is int: legend_marker_sizes = [legend_marker_sizes] * len(legend.legend_handles)
+    for i, handle in enumerate(legend.legend_handles):
+        handle.set_sizes([legend_marker_sizes[i]])
+
+    if savedir is not None:
+        plt.savefig(savedir, transparent=True, bbox_inches='tight', dpi=300)
+    plt.show()
+
+    return None
+
+
+'''
+def plot_fe(traj_all, traj_weights, savedir, fes_cmap='nipy_spectral', 
+            dim_1 = 0, dim_2 = 1, \
+            c_centers=None, d_centers=None, 
+            c_centers_s=10, c_centers_marker='.', c_centers_a=0.8, c_centers_c='black',
+            d_centers_s=10, d_centers_marker='x', d_centers_a=0.8, d_centers_c='black',
+            state_assignment=None, pcca_cmap='gist_rainbow', edgecolor='black', linewidth=0.5):
+    
+    fig, ax = plt.subplots(figsize=(7, 6))
+    ax, contour, cbar = plot_energy2d(energy2d(traj_all[:, dim_1], traj_all[:, dim_2], weights=traj_weights), ax=ax, contourf_kws=dict(cmap=fes_cmap))
+    
+    if state_assignment is not None:
+        n_states = len(np.unique(state_assignment))
+        pcca_cmap = mpl.colormaps[f'{pcca_cmap}'].resampled(n_states)
+        
+        pcca_s = ax.scatter(c_centers[:,dim_1], c_centers[:,dim_2], s=c_centers_s, marker=c_centers_marker, alpha=c_centers_a,
+                            c=state_assignment, cmap=pcca_cmap, norm=norm, edgecolor=edgecolor, linewidth=linewidth)
+        
+        pcca_cbar_ax = fig.add_axes([cbar.ax.get_position().x1+0.035, cbar.ax.get_position().y0, 0.03, cbar.ax.get_position().height])
+        pcca_cbar = plt.colorbar(pcca_s, cax=pcca_cbar_ax, label='Macrostate')
+        pcca_cbar.set_ticks(np.arange(n_states) + 0.5)
+        pcca_cbar.set_ticklabels(np.arange(n_states) + 1)
+        pcca_cbar_ax.tick_params(labelsize=12)
+        pcca_cbar_ax.set_ylabel('Macrostate', fontsize=14)
+        
+    if (state_assignment is  None) and (c_centers is not None): 
+        ax.scatter(c_centers[:,dim_1], c_centers[:,dim_2], s=c_centers_s, c=c_centers_c, marker=c_centers_marker, alpha=c_centers_a)
+    
+    if d_centers is not None:
+        ax.scatter(d_centers[:,dim_1], d_centers[:,dim_2], s=d_centers_s, c=d_centers_c, marker=d_centers_marker, alpha=d_centers_a, label='disconnected states')
+        plt.legend(markerscale=15/d_centers_s, loc='upper left', fontsize=14)
+
     ax.set_xlabel(f'tIC {dim_1+1}', fontsize=14)
     ax.set_ylabel(f'tIC {dim_2+1}', fontsize=14)
     cbar.ax.set_ylabel('Free energy (kT)', fontsize=14)
@@ -82,7 +150,7 @@ def plot_fe(traj_all, traj_weights, savedir, cmap='nipy_spectral', plot_c_center
     plt.show()
 
     return None
-
+'''
 
 
 def plot_ts(timescales, n_ts, markov_lag, savedir, scaling=0.001, unit="$\mathrm{\mu s}$"):
