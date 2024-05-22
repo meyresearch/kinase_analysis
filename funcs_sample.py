@@ -46,7 +46,7 @@ def sample_frames_by_features(ftrajs_list: List[List[np.ndarray]], ftraj_range_l
     return samples
 
 
-def sample_states_by_distribution(microstate_distribution, n_samples) -> Dict[int, int]:
+def sample_states_by_distribution(microstate_distribution, connected_states, n_samples) -> Dict[int, int]:
     """
     Decide how many sample to take from states according to the microstate distribution
 
@@ -65,7 +65,7 @@ def sample_states_by_distribution(microstate_distribution, n_samples) -> Dict[in
 
     state_indices = np.random.choice(len(microstate_distribution), size=n_samples, p=microstate_distribution)
     counts = np.bincount(state_indices)
-    state_samples_count = {i:count for i, count in enumerate(counts) if count!=0}
+    state_samples_count = {connected_states[i]:count for i, count in enumerate(counts) if count!=0}
 
     return state_samples_count
 

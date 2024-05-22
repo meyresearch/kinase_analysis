@@ -64,7 +64,6 @@ def plot_ev(ev, c_centers, traj_all, traj_weights, title, savedir, dim_1=0, dim_
     return None
 
 
-
 def plot_fe(traj_all, traj_weights, savedir, fes_cmap='nipy_spectral', 
             dim_1 = 0, dim_2 = 1, \
             c_centers=None, d_centers=None, 
@@ -98,9 +97,12 @@ def plot_fe(traj_all, traj_weights, savedir, fes_cmap='nipy_spectral',
     ax.set_ylabel(f'tIC {dim_2+1}', fontsize=14)
     cbar.ax.set_ylabel('Free energy (kT)', fontsize=14)
 
-    if type(legend_marker_sizes) is int: legend_marker_sizes = [legend_marker_sizes] * len(legend.legend_handles)
-    for i, handle in enumerate(legend.legend_handles):
-        handle.set_sizes([legend_marker_sizes[i]])
+    try:
+        if type(legend_marker_sizes) is int: legend_marker_sizes = [legend_marker_sizes] * len(legend.legend_handles)
+        for i, handle in enumerate(legend.legend_handles):
+            handle.set_sizes([legend_marker_sizes[i]])
+    except:
+        pass
 
     if savedir is not None:
         plt.savefig(savedir, transparent=True, bbox_inches='tight', dpi=300)
