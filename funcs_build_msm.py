@@ -91,7 +91,7 @@ def bootstrap_hp_trial(hp_dict, ftrajs_all, study_name, save_dir:Path):
     return None
 
 
-def get_data(trajlen_cutoff, features, ftraj_dir) -> Tuple[List[np.ndarray], Dict[int, int]]:
+def get_data(trajlen_cutoff, features, ftraj_dir, msm=True) -> Tuple[List[np.ndarray], Dict[int, int]]:
     # Load selected feature trajectories
 
     ftrajs_to_load = []
@@ -107,7 +107,7 @@ def get_data(trajlen_cutoff, features, ftraj_dir) -> Tuple[List[np.ndarray], Dic
             ftraj = np.load(ftraj_file, allow_pickle=True)
             
             # Process feature specific adjustments
-            if 'dihed' in feature:
+            if 'dihed' in feature and msm:
                 ftraj = np.concatenate([np.cos(ftraj), np.sin(ftraj)], axis=1)
 
             # Ensure that the feature trajectory is 2D

@@ -41,7 +41,7 @@ if __name__ == "__main__":
         atom_indices = top.select(topology_selection)
         trajectory_top = top.subset(atom_indices)
         print("Number of selected atoms: ", len(atom_indices))
-
+        
         for traj in trajs:
             if processed_traj_directory.joinpath(f'{traj.stem}.h5').exists():
                 print(f"Trajectory {traj.stem} already processed. Skipping...")

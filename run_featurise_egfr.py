@@ -4,7 +4,7 @@ from natsort import natsorted
 from tqdm import tqdm
 from pathlib import Path
 import builtins
-from funcs_featurise import *
+from funcs_egfr_featurise import *
 
 original_print = builtins.print
 def print(*args, **kwargs):
