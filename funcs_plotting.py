@@ -3,6 +3,8 @@
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import matplotlib.colors as colors
+import matplotlib.cm as cm
+import networkx as nx
 from deeptime.plots import plot_implied_timescales, plot_energy2d, plot_contour2d_from_xyz
 from deeptime.util import energy2d
 
@@ -69,8 +71,9 @@ def plot_fe(traj_all, traj_weights, savedir, fes_cmap='nipy_spectral',
             c_centers=None, d_centers=None, 
             c_centers_s=10, c_centers_marker='.', c_centers_a=0.8, c_centers_c='black',
             d_centers_s=10, d_centers_marker='X', d_centers_a=0.8, d_centers_c='black', d_edgecolor='white', d_linewidth=1,
-            state_assignment=None, pcca_cmap='gist_rainbow', edgecolor='black', linewidth=1,
-            legend_marker_sizes=100):
+            state_assignment=None, state_population=None, pcca_cmap='gist_rainbow', edgecolor='black', linewidth=1,
+            legend_marker_sizes=100,
+            title=''):
     
     fig, ax = plt.subplots(figsize=(7, 6))
     ax, contour, cbar = plot_energy2d(energy2d(traj_all[:, dim_1], traj_all[:, dim_2], weights=traj_weights), ax=ax, contourf_kws=dict(cmap=fes_cmap))
@@ -82,7 +85,7 @@ def plot_fe(traj_all, traj_weights, savedir, fes_cmap='nipy_spectral',
             ax.scatter(c_centers[state_assignment == i, dim_1], c_centers[state_assignment == i, dim_2], 
                        s=c_centers_s, c=colours[i], marker=c_centers_marker, alpha=c_centers_a, 
                        edgecolor=edgecolor, linewidth=linewidth,
-                       label=f'macrostate {i+1}')
+                       label=f'macrostate {i+1} ({state_population[i]*100:.1f}%)')
         legend = plt.legend(markerscale=1, loc='best', fontsize=10)
         
     if (state_assignment is  None) and (c_centers is not None): 
@@ -96,6 +99,7 @@ def plot_fe(traj_all, traj_weights, savedir, fes_cmap='nipy_spectral',
     ax.set_xlabel(f'tIC {dim_1+1}', fontsize=14)
     ax.set_ylabel(f'tIC {dim_2+1}', fontsize=14)
     cbar.ax.set_ylabel('Free energy (kT)', fontsize=14)
+    if title is not None: ax.set_title(title, fontsize=16)
 
     try:
         if type(legend_marker_sizes) is int: legend_marker_sizes = [legend_marker_sizes] * len(legend.legend_handles)
@@ -111,51 +115,79 @@ def plot_fe(traj_all, traj_weights, savedir, fes_cmap='nipy_spectral',
     return None
 
 
-'''
-def plot_fe(traj_all, traj_weights, savedir, fes_cmap='nipy_spectral', 
-            dim_1 = 0, dim_2 = 1, \
-            c_centers=None, d_centers=None, 
-            c_centers_s=10, c_centers_marker='.', c_centers_a=0.8, c_centers_c='black',
-            d_centers_s=10, d_centers_marker='x', d_centers_a=0.8, d_centers_c='black',
-            state_assignment=None, pcca_cmap='gist_rainbow', edgecolor='black', linewidth=0.5):
+def plot_pcca_graph(traj_all, traj_weights,  
+                    c_centers, matrix, pcca_assignment, stat_dist, 
+                    fes_cmap='nipy_spectral', dim_1 = 0, dim_2 = 1, 
+                    c_centers_s=50, c_centers_marker='.', c_centers_a=0.5, 
+                    pcca_cmap='gist_rainbow', c_edgecolor='black', linewidth=1, 
+                    g_alpha=0.8, connectionstyle='Angle3', 
+                    savedir=None):
     
-    fig, ax = plt.subplots(figsize=(7, 6))
+    n_states = len(np.unique(pcca_assignment))
+    colours = [cm.get_cmap(pcca_cmap)(i/(n_states-1)) for i in range(n_states)]
+    
+    # Compute the centeroids of pcca macrostates 
+    # Using the microstate centers weighted by the stationary probability
+    macrostate_centroid = []
+    for i in range(n_states):
+        macrostate_cluster_centers = c_centers[pcca_assignment == i, :]
+        macrostate_cluster_weights = stat_dist[pcca_assignment == i]
+        weighted_centroid = np.average(macrostate_cluster_centers, axis=0, weights=macrostate_cluster_weights)
+        macrostate_centroid.append(weighted_centroid)
+    pos = {i:(macrostate_centroid[i][dim_1], macrostate_centroid[i][dim_2]) for i in range(n_states)}
+
+    # Node sizes are scaled by the stationary probability of the macrostate
+    cg_stationary_dist = [sum(stat_dist[pcca_assignment == i]) for i in range(n_states)]
+    node_sizes = cg_stationary_dist/min(cg_stationary_dist)*100
+    node_ln_widths = np.cbrt(node_sizes/min(node_sizes))
+    node_ft_sizes = np.cbrt(node_sizes/min(node_sizes))*8
+
+
+    fig, ax = plt.subplots(figsize=(11, 10))
+    # Plot the FES as a background
     ax, contour, cbar = plot_energy2d(energy2d(traj_all[:, dim_1], traj_all[:, dim_2], weights=traj_weights), ax=ax, contourf_kws=dict(cmap=fes_cmap))
-    
-    if state_assignment is not None:
-        n_states = len(np.unique(state_assignment))
-        pcca_cmap = mpl.colormaps[f'{pcca_cmap}'].resampled(n_states)
-        
-        pcca_s = ax.scatter(c_centers[:,dim_1], c_centers[:,dim_2], s=c_centers_s, marker=c_centers_marker, alpha=c_centers_a,
-                            c=state_assignment, cmap=pcca_cmap, norm=norm, edgecolor=edgecolor, linewidth=linewidth)
-        
-        pcca_cbar_ax = fig.add_axes([cbar.ax.get_position().x1+0.035, cbar.ax.get_position().y0, 0.03, cbar.ax.get_position().height])
-        pcca_cbar = plt.colorbar(pcca_s, cax=pcca_cbar_ax, label='Macrostate')
-        pcca_cbar.set_ticks(np.arange(n_states) + 0.5)
-        pcca_cbar.set_ticklabels(np.arange(n_states) + 1)
-        pcca_cbar_ax.tick_params(labelsize=12)
-        pcca_cbar_ax.set_ylabel('Macrostate', fontsize=14)
-        
-    if (state_assignment is  None) and (c_centers is not None): 
-        ax.scatter(c_centers[:,dim_1], c_centers[:,dim_2], s=c_centers_s, c=c_centers_c, marker=c_centers_marker, alpha=c_centers_a)
-    
-    if d_centers is not None:
-        ax.scatter(d_centers[:,dim_1], d_centers[:,dim_2], s=d_centers_s, c=d_centers_c, marker=d_centers_marker, alpha=d_centers_a, label='disconnected states')
-        plt.legend(markerscale=15/d_centers_s, loc='upper left', fontsize=14)
+    # Plot the microstate centers coloured by pcca assignment
+    for i in range(n_states):
+        ax.scatter(c_centers[pcca_assignment == i, dim_1], c_centers[pcca_assignment == i, dim_2], 
+                    s=c_centers_s, c=colours[i], marker=c_centers_marker, alpha=c_centers_a, 
+                    edgecolor=c_edgecolor, linewidth=linewidth)
 
     ax.set_xlabel(f'tIC {dim_1+1}', fontsize=14)
     ax.set_ylabel(f'tIC {dim_2+1}', fontsize=14)
     cbar.ax.set_ylabel('Free energy (kT)', fontsize=14)
 
+    G = nx.DiGraph()
+    # Add nodes and edges to the graph
+    for i in range(n_states):
+        G.add_node(i, label=f'{i+1}')
+        for j in range(n_states):
+            if (i != j) and (matrix[i, j] < 3000000):
+                G.add_edge(i, j, weight=np.log2(max(matrix.flatten()) / matrix[i, j]))
+    edge_widths = [edge[2]['weight'] for edge in G.edges(data=True)]
+
+    nx.draw(G, pos, 
+            node_size=node_sizes[[node[0] for node in G.nodes(data=True)]],
+            node_color=[colours[node[0]] for node in list(G.nodes(data=True))], 
+            edgecolors='black', linewidths=node_ln_widths[[node[0] for node in G.nodes(data=True)]], 
+            alpha=g_alpha, 
+            edge_color = [colours[edge[0]] for edge in G.edges(data=True)], 
+            width=edge_widths, arrows=True, connectionstyle=connectionstyle,
+            ax=ax)
+    # Add labels to the nodes
+    node_labels = nx.get_node_attributes(G, 'label')
+    for node, (x, y) in pos.items():
+        label = node_labels[node]
+        ax.text(x, y, label, fontsize=node_ft_sizes[int(node)], ha='center', va='center')
+
+    plt.tight_layout(pad=2.0)
     if savedir is not None:
         plt.savefig(savedir, transparent=True, bbox_inches='tight', dpi=300)
     plt.show()
 
     return None
-'''
 
 
-def plot_ts(timescales, n_ts, markov_lag, savedir, scaling=0.001, unit="$\mathrm{\mu s}$"):
+def plot_ts(timescales, n_ts, markov_lag, savedir, scaling=0.05, unit="$\mathrm{\mu s}$"):
     
     fig, ax = plt.subplots(figsize=(8, 4))
     x = np.arange(n_ts)+2
@@ -213,9 +245,9 @@ def plot_pcca(state_assignment, c_centers, savedir, dim_1=0, dim_2=1, \
 
 
 
-def plot_mfpt_matrix(mfpt, savedir, scaling=0.001, unit="$\mathrm{\mu s}$", text_f =".2e"):
+def plot_mfpt_matrix(mfpt, savedir, scaling=0.05, unit="$\mathrm{\mu s}$", text_f =".2e"):
     n_states = mfpt.shape[0]
-    mfpt_scaled = mfpt*scaling
+    mfpt_scaled = mfpt*scaling # How many microseconds per step?
     norm = mpl.colors.Normalize(vmin=np.min(mfpt_scaled), vmax=np.max(mfpt_scaled))
 
     fig,ax = plt.subplots(1,figsize=(10,10))

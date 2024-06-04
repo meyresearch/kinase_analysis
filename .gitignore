@@ -3,12 +3,13 @@ __pycache__/
 
 ftraj_abl1/
 ftraj_egfr/
-human_abl1/
-human_egfr/
 test_DFG/
 archived/
 data_egfr/ftrajs
-plots/movie
+data_egfr/plots/movie
+data_abl/ftrajs
+data_abl/plots/movie
+vmd/
 
 *.bmp
 *.bmp.bmp
