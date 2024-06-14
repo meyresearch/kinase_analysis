@@ -1,22 +1,17 @@
 .ipynb_checkpoints/
 __pycache__/
-
-ftraj_abl1/
-ftraj_egfr/
-test_DFG/
 archived/
-data_egfr/ftrajs
-data_egfr/plots/movie
-data_abl/ftrajs
-data_abl/plots/movie
-vmd/
+test/
+
+data/egfr/ftrajs/
+data/egfr/plots/movie/
+data/abl/ftrajs/
+data/abl/plots/movie/
 
 *.bmp
 *.bmp.bmp
-*.npz
-*.npy
 *.dcd
+*.gif 
 
 log_*
-test*
 
