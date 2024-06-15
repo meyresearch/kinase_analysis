@@ -1,0 +1,6 @@
+HEADER                                                                          
+TITLE     Mg                                                                    
+HETATM    1 MG   MG  A 301     -24.995  30.395  12.100  1.00 13.67          MG2+
+HETATM    2 MG   MG  A 302     -28.443  29.409  12.576  1.00 12.06          MG2+
+MASTER        0    0    0    0    0    0    0    0    2    0    0    0          
+END                                                                             

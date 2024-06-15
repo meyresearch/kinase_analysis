@@ -1,0 +1,185 @@
+HEADER                                                                          
+TITLE     1IR3_P (1)                                                            
+SEQRES   1 A   20  LYS LYS LYS LEU PRO ALA THR ACE GLY ASP TYR MET ASN          
+SEQRES   2 A   20  MET NME SER PRO VAL GLY ASP                                  
+SHEET    1   1 1 MET A  11  MET A  13  0                                        
+ATOM      1  C   ACE A   7A    -19.211  21.794  22.313  1.00  0.00           C  
+ATOM      2  O   ACE A   7A    -19.360  21.112  21.308  1.00  0.00           O  
+ATOM      3  CH3 ACE A   7A    -18.802  21.194  23.635  1.00  0.00           C  
+ATOM      4 HH32 ACE A   7A    -18.866  20.197  23.587  1.00  0.00           H  
+ATOM      5 HH33 ACE A   7A    -17.858  21.449  23.844  1.00  0.00           H  
+ATOM      6 HH31 ACE A   7A    -19.410  21.537  24.351  1.00  0.00           H  
+ATOM      7  N   GLY A   8     -19.360  23.125  22.386  1.00 34.71           N  
+ATOM      8  CA  GLY A   8     -19.840  23.874  21.221  1.00 32.05           C  
+ATOM      9  C   GLY A   8     -19.945  25.346  21.537  1.00 29.46           C  
+ATOM     10  O   GLY A   8     -19.657  25.814  22.615  1.00 29.30           O  
+ATOM     11  H   GLY A   8     -19.144  23.606  23.235  1.00  0.00           H  
+ATOM     12  HA2 GLY A   8     -19.204  23.744  20.461  1.00  0.00           H  
+ATOM     13  HA3 GLY A   8     -20.740  23.529  20.954  1.00  0.00           H  
+ATOM     14  N   ASP A   9     -20.419  26.215  20.472  1.00 26.80           N  
+ATOM     15  CA  ASP A   9     -20.616  27.654  20.570  1.00 23.47           C  
+ATOM     16  C   ASP A   9     -21.840  28.030  21.387  1.00 21.80           C  
+ATOM     17  O   ASP A   9     -21.999  29.192  21.751  1.00 20.86           O  
+ATOM     18  CB  ASP A   9     -20.729  28.269  19.174  1.00 21.23           C  
+ATOM     19  CG  ASP A   9     -19.429  28.197  18.399  1.00 21.33           C  
+ATOM     20  OD1 ASP A   9     -18.346  28.190  19.028  1.00 18.76           O  
+ATOM     21  OD2 ASP A   9     -19.493  28.151  17.159  1.00 21.26           O1-
+ATOM     22  HB2 ASP A   9     -21.437  27.780  18.664  1.00  0.00           H  
+ATOM     23  HB3 ASP A   9     -20.997  29.228  19.265  1.00  0.00           H  
+ATOM     24  H   ASP A   9     -20.628  25.786  19.593  1.00  0.00           H  
+ATOM     25  HA  ASP A   9     -19.815  28.019  21.045  1.00  0.00           H  
+ATOM     26  N   TYR A  10     -22.694  27.045  21.670  1.00 21.39           N  
+ATOM     27  CA  TYR A  10     -23.918  27.271  22.433  1.00 20.06           C  
+ATOM     28  C   TYR A  10     -24.026  26.398  23.673  1.00 22.21           C  
+ATOM     29  O   TYR A  10     -23.472  25.302  23.736  1.00 24.09           O  
+ATOM     30  CB  TYR A  10     -25.147  27.034  21.547  1.00 20.66           C  
+ATOM     31  CG  TYR A  10     -25.150  27.867  20.292  1.00 18.82           C  
+ATOM     32  CD1 TYR A  10     -24.480  27.438  19.150  1.00 16.95           C  
+ATOM     33  CD2 TYR A  10     -25.768  29.116  20.266  1.00 20.11           C  
+ATOM     34  CE1 TYR A  10     -24.416  28.232  18.016  1.00 15.56           C  
+ATOM     35  CE2 TYR A  10     -25.711  29.914  19.134  1.00 15.54           C  
+ATOM     36  CZ  TYR A  10     -25.033  29.469  18.021  1.00 14.46           C  
+ATOM     37  OH  TYR A  10     -24.947  30.258  16.910  1.00 15.70           O  
+ATOM     38  HH  TYR A  10     -25.768  30.825  16.849  1.00  0.00           H  
+ATOM     39  HB2 TYR A  10     -25.172  26.068  21.289  1.00  0.00           H  
+ATOM     40  HB3 TYR A  10     -25.968  27.251  22.075  1.00  0.00           H  
+ATOM     41  H   TYR A  10     -22.489  26.121  21.349  1.00  0.00           H  
+ATOM     42  HD1 TYR A  10     -24.037  26.541  19.148  1.00  0.00           H  
+ATOM     43  HD2 TYR A  10     -26.259  29.441  21.074  1.00  0.00           H  
+ATOM     44  HE1 TYR A  10     -23.929  27.914  17.203  1.00  0.00           H  
+ATOM     45  HE2 TYR A  10     -26.160  30.808  19.126  1.00  0.00           H  
+ATOM     46  HA  TYR A  10     -23.881  28.222  22.740  1.00  0.00           H  
+ATOM     47  N   MET A  11     -24.753  26.901  24.658  1.00 22.77           N  
+ATOM     48  CA  MET A  11     -24.982  26.181  25.899  1.00 25.17           C  
+ATOM     49  C   MET A  11     -26.491  26.191  26.141  1.00 25.60           C  
+ATOM     50  O   MET A  11     -27.136  27.238  26.034  1.00 24.39           O  
+ATOM     51  CB  MET A  11     -24.259  26.864  27.060  1.00 25.62           C  
+ATOM     52  CG  MET A  11     -24.381  26.120  28.380  1.00 31.32           C  
+ATOM     53  SD  MET A  11     -23.534  26.949  29.724  1.00 36.50           S  
+ATOM     54  CE  MET A  11     -24.904  27.580  30.681  1.00 34.12           C  
+ATOM     55  HE1 MET A  11     -25.452  28.199  30.118  1.00  0.00           H  
+ATOM     56  HB2 MET A  11     -23.290  26.942  26.828  1.00  0.00           H  
+ATOM     57  HB3 MET A  11     -24.640  27.781  27.177  1.00  0.00           H  
+ATOM     58  HG2 MET A  11     -25.350  26.036  28.613  1.00  0.00           H  
+ATOM     59  HG3 MET A  11     -23.992  25.205  28.271  1.00  0.00           H  
+ATOM     60  HE2 MET A  11     -25.480  26.822  30.986  1.00  0.00           H  
+ATOM     61  HE3 MET A  11     -24.547  28.073  31.475  1.00  0.00           H  
+ATOM     62  H   MET A  11     -25.159  27.808  24.544  1.00  0.00           H  
+ATOM     63  HA  MET A  11     -24.631  25.247  25.836  1.00  0.00           H  
+ATOM     64  N   ASN A  12     -27.054  25.027  26.452  1.00 26.81           N  
+ATOM     65  CA  ASN A  12     -28.485  24.940  26.719  1.00 27.68           C  
+ATOM     66  C   ASN A  12     -28.693  25.461  28.136  1.00 28.15           C  
+ATOM     67  O   ASN A  12     -28.244  24.845  29.105  1.00 28.94           O  
+ATOM     68  CB  ASN A  12     -28.971  23.496  26.581  1.00 30.42           C  
+ATOM     69  CG  ASN A  12     -30.484  23.390  26.500  1.00 34.99           C  
+ATOM     70  OD1 ASN A  12     -31.063  22.386  26.917  1.00 41.96           O  
+ATOM     71  ND2 ASN A  12     -31.132  24.416  25.949  1.00 33.05           N  
+ATOM     72 HD21 ASN A  12     -30.621  25.207  25.612  1.00  0.00           H  
+ATOM     73  HB2 ASN A  12     -28.576  23.102  25.751  1.00  0.00           H  
+ATOM     74  HB3 ASN A  12     -28.654  22.973  27.372  1.00  0.00           H  
+ATOM     75  H   ASN A  12     -26.490  24.203  26.503  1.00  0.00           H  
+ATOM     76 HD22 ASN A  12     -32.129  24.395  25.872  1.00  0.00           H  
+ATOM     77  HA  ASN A  12     -29.011  25.482  26.063  1.00  0.00           H  
+ATOM     78  N   MET A  13     -29.493  26.667  28.304  1.00 28.43           N  
+ATOM     79  CA  MET A  13     -29.758  27.296  29.606  1.00 29.77           C  
+ATOM     80  C   MET A  13     -30.992  28.168  29.565  1.00 29.71           C  
+ATOM     81  O   MET A  13     -31.746  28.131  28.622  1.00 29.49           O  
+ATOM     82  CB  MET A  13     -28.536  28.108  30.059  1.00 30.13           C  
+ATOM     83  CG  MET A  13     -28.282  29.329  29.156  1.00 31.87           C  
+ATOM     84  SD  MET A  13     -26.835  30.242  29.745  1.00 33.97           S  
+ATOM     85  CE  MET A  13     -27.652  31.568  30.664  1.00 32.25           C  
+ATOM     86  HE1 MET A  13     -28.241  32.091  30.048  1.00  0.00           H  
+ATOM     87  HB2 MET A  13     -28.686  28.423  30.996  1.00  0.00           H  
+ATOM     88  HB3 MET A  13     -27.729  27.518  30.040  1.00  0.00           H  
+ATOM     89  HG2 MET A  13     -28.124  29.022  28.218  1.00  0.00           H  
+ATOM     90  HG3 MET A  13     -29.083  29.928  29.171  1.00  0.00           H  
+ATOM     91  HE2 MET A  13     -28.211  31.177  31.395  1.00  0.00           H  
+ATOM     92  HE3 MET A  13     -26.956  32.169  31.057  1.00  0.00           H  
+ATOM     93  H   MET A  13     -29.884  27.091  27.487  1.00  0.00           H  
+ATOM     94  HA  MET A  13     -29.930  26.568  30.270  1.00  0.00           H  
+ATOM     95  N   NME A  13A    -31.257  29.089  30.662  1.00  0.00           N  
+ATOM     96  H   NME A  13A    -30.495  29.476  31.181  1.00  0.00           H  
+ATOM     97  CH3 NME A  13A    -32.634  29.452  31.011  1.00  0.00           C  
+ATOM     98 HH31 NME A  13A    -33.257  29.137  30.295  1.00  0.00           H  
+ATOM     99 HH32 NME A  13A    -32.888  29.020  31.877  1.00  0.00           H  
+ATOM    100 HH33 NME A  13A    -32.696  30.446  31.099  1.00  0.00           H  
+TER     101      NME A  13A                                                     
+CONECT    3    4    5    6                                                      
+CONECT    4    3                                                                
+CONECT    5    3                                                                
+CONECT    6    3                                                                
+CONECT    7   11                                                                
+CONECT    8   12   13                                                           
+CONECT   11    7                                                                
+CONECT   12    8                                                                
+CONECT   13    8                                                                
+CONECT   14   24                                                                
+CONECT   15   25                                                                
+CONECT   18   22   23                                                           
+CONECT   22   18                                                                
+CONECT   23   18                                                                
+CONECT   24   14                                                                
+CONECT   25   15                                                                
+CONECT   26   41                                                                
+CONECT   27   46                                                                
+CONECT   30   39   40                                                           
+CONECT   32   42                                                                
+CONECT   33   43                                                                
+CONECT   34   44                                                                
+CONECT   35   45                                                                
+CONECT   37   38                                                                
+CONECT   38   37                                                                
+CONECT   39   30                                                                
+CONECT   40   30                                                                
+CONECT   41   26                                                                
+CONECT   42   32                                                                
+CONECT   43   33                                                                
+CONECT   44   34                                                                
+CONECT   45   35                                                                
+CONECT   46   27                                                                
+CONECT   47   62                                                                
+CONECT   48   63                                                                
+CONECT   51   56   57                                                           
+CONECT   52   58   59                                                           
+CONECT   54   55   60   61                                                      
+CONECT   55   54                                                                
+CONECT   56   51                                                                
+CONECT   57   51                                                                
+CONECT   58   52                                                                
+CONECT   59   52                                                                
+CONECT   60   54                                                                
+CONECT   61   54                                                                
+CONECT   62   47                                                                
+CONECT   63   48                                                                
+CONECT   64   75                                                                
+CONECT   65   77                                                                
+CONECT   68   73   74                                                           
+CONECT   71   72   76                                                           
+CONECT   72   71                                                                
+CONECT   73   68                                                                
+CONECT   74   68                                                                
+CONECT   75   64                                                                
+CONECT   76   71                                                                
+CONECT   77   65                                                                
+CONECT   78   93                                                                
+CONECT   79   94                                                                
+CONECT   82   87   88                                                           
+CONECT   83   89   90                                                           
+CONECT   85   86   91   92                                                      
+CONECT   86   85                                                                
+CONECT   87   82                                                                
+CONECT   88   82                                                                
+CONECT   89   83                                                                
+CONECT   90   83                                                                
+CONECT   91   85                                                                
+CONECT   92   85                                                                
+CONECT   93   78                                                                
+CONECT   94   79                                                                
+CONECT   95   96                                                                
+CONECT   96   95                                                                
+CONECT   97   98   99  100                                                      
+CONECT   98   97                                                                
+CONECT   99   97                                                                
+CONECT  100   97                                                                
+MASTER        0    0    0    0    1    0    0    0  100    1   77    2          
+END                                                                             
