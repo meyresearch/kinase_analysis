@@ -1,7 +1,7 @@
 .ipynb_checkpoints/
 __pycache__/
 archived/
-test/
+tests/
 
 data/egfr/ftrajs/
 data/egfr/plots/movie/
@@ -12,6 +12,8 @@ data/abl/plots/movie/
 *.bmp.bmp
 *.dcd
 *.gif 
+*_tmat.npy
+*.npz
 
 log_*
 
