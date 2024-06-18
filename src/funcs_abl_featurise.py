@@ -29,7 +29,7 @@ def dbdist_featuriser(traj, save_to_disk=None) -> np.ndarray:
     return distances
 
 
-def assign_dfg_spatial(dbdist, centroids=None, save_to_disk=None):
+def assign_dfg_spatial(dbdist, centroids=None):
     """
     Assign Abl conformations to a one of the 3 spatial clusters based on the distance to the cluster's centroid.
     Cluster indices for DFG-in:  {0 : DFG-in,
@@ -37,7 +37,7 @@ def assign_dfg_spatial(dbdist, centroids=None, save_to_disk=None):
                                   2 : DFG-out}
     """
     if centroids is None:
-        centroids = np.load('/home/rzhu/Desktop/projects/kinase_analysis/data_abl/cluster_centers/dfg_spatial_centroids.npy', allow_pickle=True)
+        centroids = np.load('/home/rzhu/Desktop/projects/kinase_analysis/data/abl/cluster_centers/dfg_spatial_centroids.npy', allow_pickle=True)
     distances = cdist(dbdist, centroids)
     assignments = np.argmin(distances, axis=1)
     return assignments
@@ -117,7 +117,7 @@ def assign_dfg_dihed(dbdiheds, spatial_group, centroids=None, noise_cutoff=1, sa
     """
 
     if centroids is None:
-        centroids = np.load('/home/rzhu/Desktop/projects/kinase_analysis/data_abl/cluster_centers/dfg_dihed_centroids.npy', allow_pickle=True).item()
+        centroids = np.load('/home/rzhu/Desktop/projects/kinase_analysis/data/abl/cluster_centers/dfg_dihed_centroids.npy', allow_pickle=True).item()
     centroids = centroids[spatial_group]
 
     distances = []
