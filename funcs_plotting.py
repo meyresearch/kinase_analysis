@@ -81,13 +81,20 @@ def plot_fe(traj_all, traj_weights, savedir, fes_cmap='nipy_spectral',
     if state_assignment is not None:
         n_states = len(np.unique(state_assignment))
         colours = [plt.cm.get_cmap(pcca_cmap)(i/(n_states-1)) for i in range(n_states)]
-        for i in range(n_states):
-            ax.scatter(c_centers[state_assignment == i, dim_1], c_centers[state_assignment == i, dim_2], 
-                       s=c_centers_s, c=colours[i], marker=c_centers_marker, alpha=c_centers_a, 
-                       edgecolor=edgecolor, linewidth=linewidth,
-                       label=f'macrostate {i+1} ({state_population[i]*100:.1f}%)')
-        legend = plt.legend(markerscale=1, loc='best', fontsize=10)
-        
+        if state_population is not None:
+            for i in range(n_states):
+                ax.scatter(c_centers[state_assignment == i, dim_1], c_centers[state_assignment == i, dim_2], 
+                        s=c_centers_s, c=colours[i], marker=c_centers_marker, alpha=c_centers_a, 
+                        edgecolor=edgecolor, linewidth=linewidth,
+                        label=f'macrostate {i+1} ({state_population[i]*100:.1f}%)')
+            legend = plt.legend(markerscale=1, loc='best', fontsize=10)
+        else:
+            for i in range(n_states):
+                ax.scatter(c_centers[state_assignment == i, dim_1], c_centers[state_assignment == i, dim_2], 
+                        s=c_centers_s, c=colours[i], marker=c_centers_marker, alpha=c_centers_a, 
+                        edgecolor=edgecolor, linewidth=linewidth,
+                        label=f'macrostate {i+1}')
+
     if (state_assignment is  None) and (c_centers is not None): 
         ax.scatter(c_centers[:,dim_1], c_centers[:,dim_2], s=c_centers_s, c=c_centers_c, marker=c_centers_marker, alpha=c_centers_a)
     
@@ -279,6 +286,7 @@ def plot_mfpt_matrix(mfpt, savedir, scaling=0.00005, unit="$\mathrm{\mu s}$", te
 
 
 def plot_dihed_pie(spatial_counts, dihed_counts, radius_size=0.5, 
+                   show_legend=False, show_clusters=True,
                    figsize=(6,6), title='', fontsize=12, savedir=None):
     
     dihed_cluster_labels = ['noise', 'BLAminus', 'BLAplus', 'ABAminus', 'BLBminus', 'BLBplus', 'BLBtrans', 'noise', 'BABtrans', 'noise', 'BBAminus']
@@ -307,23 +315,24 @@ def plot_dihed_pie(spatial_counts, dihed_counts, radius_size=0.5,
     fig, ax = plt.subplots(figsize=figsize)
  
     wedges_i, texts_i = ax.pie(spatial_counts, radius=1-radius_size, colors=inner_colors, 
-           # labels=filtered_spatial_cluster_labels, textprops={'fontsize': fontsize, 'fontweight': 'bold'}, labeldistance=0.5, # Don't show the spatial labels
            wedgeprops=dict(width=radius_size, edgecolor='w'))
-
-    wedges_o, texts_o = ax.pie(sum(dihed_counts,[]), radius=1, colors=outer_colors,
-           #labels=filtered_dihed_cluster_labels, textprops={'fontsize': fontsize, 'fontweight': 'bold'}, labeldistance=0.7,
-           wedgeprops=dict(width=radius_size, edgecolor='w'))
+    if show_clusters:
+        wedges_o, texts_o = ax.pie(sum(dihed_counts,[]), radius=1, colors=outer_colors,
+               labels=filtered_dihed_cluster_labels, textprops={'fontsize': fontsize, 'fontweight': 'bold'}, labeldistance=0.7,
+               wedgeprops=dict(width=radius_size, edgecolor='w'))
+    else:
+        wedges_o, texts_o = ax.pie(sum(dihed_counts,[]), radius=1, colors=outer_colors,
+                                wedgeprops=dict(width=radius_size, edgecolor='w'))
 
     ax.set(aspect="equal")
     ax.text(0, 0, title, ha='center', va='center', fontsize=16, fontweight='bold')
 
-    
-    ax.legend(wedges_i, spatial_cluster_labels,
-              loc="center left",
-              bbox_to_anchor=(1, 0, 0.5, 1),
-              fontsize=18,
-              markerscale=2)
-    
+    if show_legend:
+        ax.legend(wedges_i, spatial_cluster_labels,
+                loc="center left",
+                bbox_to_anchor=(1, 0, 0.5, 1),
+                fontsize=18,
+                markerscale=2)
     
     if savedir is not None:
         plt.savefig(savedir, transparent=True, bbox_inches='tight', dpi=300)

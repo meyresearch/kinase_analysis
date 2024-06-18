@@ -152,7 +152,7 @@ class MSMAnalysis():
         return ftrajs 
     
 
-    def create_study(self, study_name, hp_dict, features=None, stride=1, wk_dir=None):
+    def create_study(self, study_name, hp_dict, features=None, stride=1, wk_dir=None, create_new=True,):
         '''
         Create a new MSM study with fixed hyperparameters and working directory. 
 
@@ -184,12 +184,12 @@ class MSMAnalysis():
 
         _selected_ftrajs = self.select_ftrajs(features)
         ftrajs, mapping = prepare_ftrajs(_selected_ftrajs, stride=stride, len_cutoff=self._trajlen_cutoff)
-        self.studies[study_name] = MSMStudy(study_name, ftrajs, mapping, wk_dir, **hp_dict)
+        self.studies[study_name] = MSMStudy(study_name, ftrajs, mapping, wk_dir, create_new=create_new, **hp_dict)
 
         return self.studies[study_name]
 
 
-def prepare_ftrajs(ftrajs_dict, stride=1, len_cutoff=1000):
+def prepare_ftrajs(ftrajs_dict, stride=1, len_cutoff=1000, convert_dihed=True):
     '''
     Concatenate and prepare the feature trajectories for the MSM analysis. 
 
@@ -221,8 +221,9 @@ def prepare_ftrajs(ftrajs_dict, stride=1, len_cutoff=1000):
             continue
 
         ftrajs_to_add = [ftraj[i] for ftraj in ftrajs_raw]
-        for id in dihed_ids:
-            ftrajs_to_add[id] = np.concatenate([np.cos(ftrajs_to_add[id]), np.sin(ftrajs_to_add[id])], axis=1)
+        if convert_dihed:
+            for id in dihed_ids:
+                ftrajs_to_add[id] = np.concatenate([np.cos(ftrajs_to_add[id]), np.sin(ftrajs_to_add[id])], axis=1)
 
         ftrajs_to_add = np.concatenate(ftrajs_to_add, axis=1)
         ftrajs.append(ftrajs_to_add[::stride])
