@@ -251,16 +251,19 @@ def plot_pcca(state_assignment, c_centers, savedir, dim_1=0, dim_2=1, \
     return None
 
 
-
-def plot_mfpt_matrix(mfpt, savedir, scaling=0.00005, unit="$\mathrm{\mu s}$", text_f =".2e"):
+def plot_mfpt_matrix(mfpt, mfpt_err=None, savedir=None, scaling=0.00005, unit="$\mathrm{\mu s}$", text_f =".2e"):
     n_states = mfpt.shape[0]
     mfpt_scaled = mfpt*scaling # How many microseconds per step?
+    mfpt_err_scaled = mfpt_err*scaling if mfpt_err is not None else None
     norm = mpl.colors.Normalize(vmin=np.min(mfpt_scaled), vmax=np.max(mfpt_scaled))
 
     fig,ax = plt.subplots(1,figsize=(10,10))
     s = ax.imshow(mfpt_scaled, cmap='turbo', norm=norm) 
     for i in range(n_states):
-        for j in range(n_states):        
+        for j in range(n_states):
+            if mfpt_err_scaled is not None and i != j:
+                ax.text(j, i, "{value:{format}} \n$\pm$ {err:{format}}".format(value=mfpt_scaled[i,j], err=mfpt_err_scaled[i,j], format=text_f), va='center', ha='center', color='white', size=10, weight="bold")
+            else:
                 ax.text(j, i, "{value:{format}}".format(value=mfpt_scaled[i,j], format=text_f), va='center', ha='center', color='white', size=10, weight="bold")
 
     cbar_ax = fig.add_axes([ax.get_position().x1+0.02, ax.get_position().y0, 0.03, ax.get_position().height])

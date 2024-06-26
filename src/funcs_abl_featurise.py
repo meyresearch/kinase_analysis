@@ -1,6 +1,5 @@
 import mdtraj as md
 import numpy as np
-from scipy.spatial.distance import cdist
 from typing import *
 
 
@@ -27,20 +26,6 @@ def dbdist_featuriser(traj, save_to_disk=None) -> np.ndarray:
     distances = md.compute_distances(traj, [[met_ca_id, phe_cz_id], [lys_ca_id, phe_cz_id]])
     if save_to_disk is not None: np.save(save_to_disk, distances)
     return distances
-
-
-def assign_dfg_spatial(dbdist, centroids=None):
-    """
-    Assign Abl conformations to a one of the 3 spatial clusters based on the distance to the cluster's centroid.
-    Cluster indices for DFG-in:  {0 : DFG-in,
-                                  1 : DFG-inter,
-                                  2 : DFG-out}
-    """
-    if centroids is None:
-        centroids = np.load('/home/rzhu/Desktop/projects/kinase_analysis/data/abl/cluster_centers/dfg_spatial_centroids.npy', allow_pickle=True)
-    distances = cdist(dbdist, centroids)
-    assignments = np.argmin(distances, axis=1)
-    return assignments
 
 
 def dbdihed_featuriser(traj, save_to_disk=None) -> np.ndarray:
@@ -81,87 +66,6 @@ def dbdihed_featuriser(traj, save_to_disk=None) -> np.ndarray:
     
     if save_to_disk is not None: np.save(save_to_disk, dihedrals)
     return dihedrals
-
-
-def angle_distance(u1, u2):
-    """
-    Calculate the distance between two angles.
-    """
-    return 2 * (1 - np.cos(u1 - u2))
-
-
-def dihedral_distance(vector1, vector2):
-    """
-    Calculate the total distance between two vectors of dihedral angles.
-    """
-    total_distance = 0
-    for angle1, angle2 in zip(vector1, vector2):
-        total_distance += angle_distance(angle1, angle2)
-    return total_distance/len(vector1)
-
-
-def assign_dfg_dihed(dbdiheds, spatial_group, centroids=None, noise_cutoff=1, save_to_disk=None):
-    """
-    Assign Abl conformations to a one of the seven dihedral clusters based on the distance to the cluster's centroid.
-    Cluster indices for DFG-in:   {-1 : noise,
-                                    0 : BLAminus,
-                                    1 : BLAplus,
-                                    2 : ABAminus,
-                                    3 : BLBminus,
-                                    4 : BLBplus,
-                                    5 : BLBtrans}
-    Cluster indices for DFG-inter:{-1 : noise,
-                                    0 : BABtrans}
-    Cluster indices for DFG-out:  {-1 : noise,
-                                    0 : BBAminus}  
-    """
-
-    if centroids is None:
-        centroids = np.load('/home/rzhu/Desktop/projects/kinase_analysis/data/abl/cluster_centers/dfg_dihed_centroids.npy', allow_pickle=True).item()
-    centroids = centroids[spatial_group]
-
-    distances = []
-    for dbdihed in dbdiheds:
-        distances.append([dihedral_distance(dbdihed, centroid) for centroid in centroids])
-    distances = np.array(distances)
-    assignments = np.argmin(distances, axis=1)
-    min_distances = np.min(distances, axis=1)
-    assignments[min_distances > noise_cutoff] = -1
-
-    return assignments
-
-
-def compute_dfg_assignment(dists, diheds, dist_centroids=None, dihed_centroids=None, dihed_cutoff=1):
-    '''
-    Compute the dfg spatial group and dihedral group assignment to a group of conformations. Usually a macrostate
-    '''
-    
-    assert dists.shape[0] == diheds.shape[0], 'Feature vectors should have the same length'
-    assert dists.shape[1] == 2, 'Incorrect number of distance features, should be 2'
-    assert diheds.shape[1] == 7, 'Incorrect number of dihedral features, should be 7'
-
-    spatial_clusters = assign_dfg_spatial(dists, dist_centroids)
-    spatial_counts = [sum(spatial_clusters == i) for i in range(3)]
-
-    in_diheds, inter_diheds, out_diheds = diheds[spatial_clusters==0], diheds[spatial_clusters==1], diheds[spatial_clusters==2]
-    if len(in_diheds) > 0:
-        in_dihed_clusters = assign_dfg_dihed(in_diheds, 'dfg-in', dihed_centroids, dihed_cutoff)
-    else:
-        in_dihed_clusters = np.array([])
-    if len(inter_diheds) > 0:
-        inter_dihed_clusters = assign_dfg_dihed(inter_diheds, 'dfg-inter', dihed_centroids, dihed_cutoff)
-    else:
-        inter_dihed_clusters = np.array([])
-    if len(out_diheds) > 0:
-        out_dihed_clusters = assign_dfg_dihed(out_diheds, 'dfg-out', dihed_centroids, dihed_cutoff)
-    else:
-        out_dihed_clusters = np.array([])
-        
-    dihed_counts = [[sum(in_dihed_clusters == i) for i in range(-1, 6)],
-                    [sum(inter_dihed_clusters == i) for i in range(-1,1)],
-                    [sum(out_dihed_clusters == i) for i in range(-1,1)]]
-
-    return spatial_counts, dihed_counts
 
 
 def aloop_featuriser(traj, save_to_disk=None) -> np.ndarray:

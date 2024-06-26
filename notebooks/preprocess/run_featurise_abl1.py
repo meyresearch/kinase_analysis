@@ -5,6 +5,8 @@ from tqdm import tqdm
 from pathlib import Path
 import builtins
 from funcs_abl_featurise import *
+from funcs_db_assign import *
+
 
 original_print = builtins.print
 def print(*args, **kwargs):
@@ -16,15 +18,16 @@ builtins.print = print
 if __name__ == "__main__":
     traj_dir = Path('/arc/abl_processed')
     traj_files = natsorted([traj for traj in traj_dir.rglob('run*-clone?.h5')])
+
     max_run_no = max([int(re.search(r'run([0-9]+)-clone[0-9]+\.h5', f.name).group(1)) for f in traj_files])
 
-    save_dir = Path('/home/rzhu/Desktop/projects/kinase_analysis/data_abl/ftrajs/')
+    save_dir = Path('/home/rzhu/Desktop/projects/kinase_analysis/data/abl/ftrajs/')
     if not save_dir.exists(): save_dir.mkdir(parents=True, exist_ok=True)
 
     # No need to align to a reference structure as all the features are internal degrees of freedoms
     # ref = md.load('/arc/egfr_equilibrated_strucs/RUN0_solute_equilibrated.pdb')
     
-    featurisers = [ploopdihed_featuriser]
+    featurisers = []
     print(f'Featurisers: {[f.__name__ for f in featurisers]}')
 
     # Loop over runs

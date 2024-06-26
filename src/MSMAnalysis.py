@@ -224,8 +224,11 @@ def prepare_ftrajs(ftrajs_dict, stride=1, len_cutoff=1000, convert_dihed=True):
         if convert_dihed:
             for id in dihed_ids:
                 ftrajs_to_add[id] = np.concatenate([np.cos(ftrajs_to_add[id]), np.sin(ftrajs_to_add[id])], axis=1)
-
-        ftrajs_to_add = np.concatenate(ftrajs_to_add, axis=1)
+        
+        if ftrajs_to_add[0].ndim == 1:
+            ftrajs_to_add = np.concatenate(ftrajs_to_add)
+        else:
+            ftrajs_to_add = np.concatenate(ftrajs_to_add, axis=1)
         ftrajs.append(ftrajs_to_add[::stride])
         mapping[len(ftrajs)-1] = i
 
