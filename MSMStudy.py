@@ -8,6 +8,7 @@ from deeptime.markov.msm import BayesianMSM
 from deeptime.markov.tools import *
 import deeptime as dt
 
+import pickle
 import numpy as np
 from pathlib import Path
 
@@ -97,6 +98,7 @@ class MSMStudy():
             self._pcca()
         else:
             self._pcca_n = n
+            print('Set number of metastable states to ', n)
         self._save_model_params()
 
 
@@ -110,7 +112,7 @@ class MSMStudy():
     def _kmeans(self):
         if not self.ttrajs:
             raise ValueError('TICA trajectories not found. Run TICA first')
-        self.kmeans_mod = cluster_kmeans(self.ttrajs, k=self._cluster__k, max_iter=self._cluster__maxiter, 
+        self.kmeans_mod = cluster_kmeans(self.ttraj_cat, k=self._cluster__k, max_iter=self._cluster__maxiter, 
                                          stride=self._cluster__stride, fixed_seed=self._seed)
         self.dtrajs = self.kmeans_mod.dtrajs
         self.dtraj_cat = np.concatenate(self.dtrajs)
@@ -120,7 +122,7 @@ class MSMStudy():
     def _trans_count(self):
         if not self.dtrajs:
             raise ValueError('Discrete trajectories not found. Run kmeans clustering first')
-        self.count_mod = TransitionCountEstimator(lagtime=self._markov__lag, count_mode='sliding').fit_fetch(self.dtrajs)
+        self.count_mod = TransitionCountEstimator(lagtime=self._markov__lag, count_mode='effective').fit_fetch(self.dtrajs)
         self.connected_states = estimation.largest_connected_set(self.count_mod.count_matrix)
         self.disconnected_states = np.setdiff1d(np.arange(self._cluster__k), self.connected_states)
         if self.disconnected_states.shape[0] > 0:
@@ -135,7 +137,6 @@ class MSMStudy():
 
 
     def _bayesian_MSM(self):
-        # Implement Bayesian MSM in the future
         if not self.count_mod:
             raise ValueError('Transition count not found. Run transition count estimation first')
         self.baymsm_mod = BayesianMSM(reversible=True).fit_fetch(self.count_mod)
@@ -158,7 +159,7 @@ class MSMStudy():
         self._tica()
         self._kmeans()
         self._trans_count()
-        self._ML_MSM()
+        self._bayesian_MSM()
         self._pcca()
         print('MSM estimation complete')
 
@@ -191,12 +192,15 @@ class MSMStudy():
             self.kmeans_mod.save(str(self.model_dir / 'kmeans_model'), overwrite=overwrite)
         if self.count_mod:
             if overwrite:
-                np.save(self.model_dir/f'count_matrix.npy', self.count_mod.count_matrix)
+                np.save(self.model_dir/'count_matrix.npy', self.count_mod.count_matrix)
             else:
                 raise ValueError('Overwriting count matrix not allowed. Set overwrite=True to overwrite')
-        if self.msm_mod:
+        if self.baymsm_mod:
+            with open(self.model_dir/'bayesian_msm.pkl', 'wb') as file:
+                pickle.dump(self.baymsm_mod, file)
+        elif self.msm_mod:
             if overwrite:
-                np.save(self.model_dir/f'transition_matrix.npy', self.msm_mod.transition_matrix)
+                np.save(self.model_dir/'transition_matrix.npy', self.msm_mod.transition_matrix)
             else:
                 raise ValueError('Overwriting transition matrix not allowed. Set overwrite=True to overwrite')
     
@@ -243,7 +247,14 @@ class MSMStudy():
             self.kmeans_centers = self.kmeans_mod.clustercenters
         else:
             raise ValueError('Kmeans model not found. Check the working directory')
-        
+
+        if (self.model_dir / 'bayesian_msm.pkl').exists():
+            print('Restoring Bayesian MSM model')
+            with open(self.model_dir / 'bayesian_msm.pkl', 'rb') as file:
+                self.baymsm_mod = pickle.load(file)
+                self.msm_mod = self.baymsm_mod.prior
+                self.traj_weights = self.msm_mod.compute_trajectory_weights(self.dtrajs)
+
         self._trans_count()
         self._ML_MSM()
         self._pcca()
