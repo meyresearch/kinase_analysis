@@ -69,6 +69,12 @@ class MSMStudy():
                 self._pcca_n = 5
                 print('Number of metastable states not specified. Defaulting to 5. Run set_pcca() to set the number of metastable states')
             
+            if not self.fig_dir.exists():
+                self.fig_dir.mkdir(parents=True)
+                
+            if not self.sample_dir.exists():
+                self.sample_dir.mkdir(parents=True)
+
             #self._save_model_params()
         else:
             self.restore_models()
@@ -208,7 +214,6 @@ class MSMStudy():
     def _save_model_params(self):
         if not self.model_dir.exists():
             self.model_dir.mkdir(parents=True)
-
 
         with open(self.model_dir / 'study_params.txt', 'w') as f:
             f.write(f'{self.study_name}\n')
