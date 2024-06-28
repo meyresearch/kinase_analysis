@@ -66,7 +66,7 @@ def plot_ev(ev, c_centers, traj_all, traj_weights, title, savedir, dim_1=0, dim_
     return None
 
 
-def plot_fe(traj_all, traj_weights, savedir, fes_cmap='nipy_spectral', 
+def plot_fe(traj_all, traj_weights, savedir=None, fes_cmap='nipy_spectral', 
             dim_1 = 0, dim_2 = 1, \
             c_centers=None, d_centers=None, 
             c_centers_s=10, c_centers_marker='.', c_centers_a=0.8, c_centers_c='black',
@@ -195,13 +195,39 @@ def plot_pcca_graph(traj_all, traj_weights,
 
 
 def plot_ts(timescales, n_ts, markov_lag, savedir, scaling=0.00005, unit="$\mathrm{\mu s}$"):
+    '''
+    Plot implied timescales of processes from a Maximum likihood MSM or Bayesian MSM samples. 
+    
+    Parameters
+    ----------
+    timescales : np.array
+        Array of timescales from the MSM samples. If timescales has shape (n_markov_states), plot the single measurement. If timescales has shape (n_markov_states, n_samples), plot the mean and std over n_samples. 
+    n_ts : int
+        Number of timescales to plot.
+    markov_lag : int
+        Markov lag used to estimate the MSM in unit of step.
+    scaling : float
+        How many unit (microsecond by default) per step.
+    unit : str
+        Timescale unit used for plotting
+    '''
     
     fig, ax = plt.subplots(figsize=(8, 4))
-    x = np.arange(n_ts)+2
-    y = timescales[:n_ts]*scaling
-    markov_lag_scaled = markov_lag * scaling
 
-    ax.plot(x, y, marker='o', markersize=10)
+    x = np.arange(n_ts)+2
+    markov_lag_scaled = markov_lag * scaling   
+    if timescales.ndim == 1:
+        y = timescales[:n_ts]*scaling
+        if len(timescales) < n_ts: UserWarning("Not enough timescales to plot.")
+        ax.plot(x, y, marker='o', markersize=10)
+    elif timescales.ndim == 2:
+        y = timescales.mean(axis=0)[:n_ts]*scaling
+        yerr = timescales.std(axis=0)[:n_ts]*scaling
+        if timescales.shape[1] < n_ts: UserWarning("Not enough timescales to plot.")
+        ax.errorbar(x, y, yerr=yerr, fmt='o', markersize=5, capsize=6, capthick=2, ls='-', ecolor='black')
+    else:
+        raise ValueError("timescales must have shape (n_markov_states) or (n_markov_states, n_samples)")
+    
     ax.fill_between([0, n_ts+2], y1=markov_lag_scaled, y2=0, color='grey', alpha=0.8)
 
     ax.set_yscale('log')
@@ -220,7 +246,6 @@ def plot_ts(timescales, n_ts, markov_lag, savedir, scaling=0.00005, unit="$\math
     plt.show()
 
     return None
-
 
 
 def plot_pcca(state_assignment, c_centers, savedir, dim_1=0, dim_2=1, \

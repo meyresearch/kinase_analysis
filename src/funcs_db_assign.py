@@ -84,3 +84,25 @@ def dfg_featuriser(dists, diheds, dist_centroids=None, dihed_centroids=None, dih
         np.save(save_to_disk[1], dihed_assignments)
 
     return spatial_assignments, dihed_assignments
+
+
+def dunbrack_count(spatial_assignments, dihedral_assignments):
+    '''
+    Count the number of snapshots in each spatial and dihedral cluster.
+
+    Parameters
+    ----------
+    spatial_assignments : np.ndarray
+        The spatial assignments of each snapshot
+    dihedral_assignments : np.ndarray
+        The dihedral assignments of each snapshot
+    '''
+    
+    spatial_counts = np.array([np.sum(spatial_assignments == i) for i in range(3)])
+    in_dihed_counts = [np.sum(dihedral_assignments == i) for i in range(0,6)]
+    inter_dihed_counts = [np.sum(dihedral_assignments == i) for i in range(6,7)]
+    out_dihed_counts = [np.sum(dihedral_assignments == i) for i in range(7,8)]
+    dihed_counts = [[spatial_counts[0] - np.sum(in_dihed_counts)] + in_dihed_counts, 
+                    [spatial_counts[1] - np.sum(inter_dihed_counts)] + inter_dihed_counts, 
+                    [spatial_counts[2] - np.sum(out_dihed_counts)] + out_dihed_counts] 
+    return spatial_counts, dihed_counts
