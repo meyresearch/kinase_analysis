@@ -152,7 +152,7 @@ class MSMAnalysis():
         return ftrajs 
     
 
-    def create_study(self, study_name, hp_dict, features=None, stride=1, wk_dir=None, create_new=True,):
+    def create_study(self, study_name, hp_dict=None, features=None, stride=1, wk_dir=None, create_new=True,):
         '''
         Create a new MSM study with fixed hyperparameters and working directory. 
 
@@ -182,10 +182,17 @@ class MSMAnalysis():
         if features is None:
             features = self.features
 
+        if create_new and hp_dict is None:
+            raise ValueError('Please provide hyperparameters for a new study.')
+        
         _selected_ftrajs = self.select_ftrajs(features)
         ftrajs, mapping = prepare_ftrajs(_selected_ftrajs, stride=stride, len_cutoff=self._trajlen_cutoff)
-        self.studies[study_name] = MSMStudy(study_name, ftrajs, mapping, wk_dir, create_new=create_new, **hp_dict)
 
+        if create_new:
+            self.studies[study_name] = MSMStudy(study_name, ftrajs, mapping, wk_dir, create_new=create_new, **hp_dict)
+        else:
+            self.studies[study_name] = MSMStudy(study_name, ftrajs, mapping, wk_dir, create_new=create_new)
+        
         return self.studies[study_name]
 
 
@@ -229,6 +236,7 @@ def prepare_ftrajs(ftrajs_dict, stride=1, len_cutoff=1000, convert_dihed=True):
             ftrajs_to_add = np.concatenate(ftrajs_to_add)
         else:
             ftrajs_to_add = np.concatenate(ftrajs_to_add, axis=1)
+            
         ftrajs.append(ftrajs_to_add[::stride])
         mapping[len(ftrajs)-1] = i
 
