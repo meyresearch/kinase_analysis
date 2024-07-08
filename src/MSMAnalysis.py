@@ -25,10 +25,13 @@ class MSMAnalysis():
     '''
 
     def __init__(self, protein, trajlen_cutoff=1000):
+        '''
         if protein in ['egfr', 'abl']:
             self.protein = protein
         else:
             raise ValueError('Protein must be either "egfr" or "abl"')
+        '''
+        self.protein = protein
         self._features = set()
         self._ftrajs_raw = dict()
         self.studies = dict()
@@ -53,20 +56,25 @@ class MSMAnalysis():
         return f'MSMAnalysis: {self.protein}\nFeatures: {self.features}\nStudies: {list(self.studies.keys())}'
 
 
-    def load_ftrajs(self, features, arc_dir):
+    def load_ftrajs(self, names, arc_dir, features=None):
         '''
         Load the raw feature trajectories to build the MSMs from a given directory.
 
         Parameters
         ----------
-        features : list
+        names : list
             A list of strings of features. Should correspond to the ftraj files in the directory
         arc_dir : str
             The directory where the ftrajs are stored
+        features : list
+            A list of names to assign to the features. If None, the names will be the same as the features
         '''
 
         if isinstance(arc_dir,str):
             arc_dir = Path(arc_dir)
+
+        if features == None:
+            features = names
 
         new_ftraj_files_ls = []
         new_feature_list = []
@@ -75,7 +83,7 @@ class MSMAnalysis():
                 print(f'Feature {feature} already loaded. Skipping...')
                 continue
             else:
-                ftraj_files = natsorted([str(ftraj) for ftraj in arc_dir.rglob(f'run*-clone?_{feature}.npy')])
+                ftraj_files = natsorted([str(ftraj) for ftraj in arc_dir.rglob(f'run*-clone?_{names[i]}.npy')])
                 if len(ftraj_files) == 0:
                     raise ValueError(f'No feature trajectories found for {feature}. Check the directory.')
                 new_ftraj_files_ls.append(ftraj_files)
@@ -217,7 +225,7 @@ def prepare_ftrajs(ftrajs_dict, stride=1, len_cutoff=1000, convert_dihed=True):
         A dictionary mapping the indices of the selected feature trajectories to the original feature trajectories
     '''
 
-    dihed_ids = np.where(['dihed' in k for k in list(ftrajs_dict.keys())])[0]
+    dihed_ids = np.where([('dihed' in k) and ('dihedgroup' not in k) for k in list(ftrajs_dict.keys())])[0]
     ftrajs_raw = [v for v in ftrajs_dict.values()]
     no_of_trajs = len(ftrajs_raw[0])
 
