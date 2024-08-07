@@ -1,5 +1,5 @@
 # This file hard codes the atom indices that are used in feature calculations. 
-# Can we automate this for different kinases in the future? (potentially making use of the sequence alignment)
+# Should we automate this for different kinases in the future? 
 
 import numpy as np
 
@@ -49,6 +49,37 @@ def get_feature_indices(top, protein, feature):
         if feature == 'aChelix':
             indices['aC_start']    = np.where([str(res) == 'GLU281' for res in top.residues])[0][0]
             indices['aC_end']      = np.where([str(res) == 'GLU292' for res in top.residues])[0][0]
+        
+        ########## Features from the mechanism paper to track DFG-flip ############ 
+        if feature == 'inHbond_dist':
+            # A H-bond interaction between dfg-D and p-loop-Tyr observed in dfg-in conformations 
+            indices['dfg_D-cg'] = find_atomid(top, 'ASP381-CG')
+            indices['ploop_Hdonor'] = find_atomid(top, 'TYR253-OH')
+        if feature == 'interHbond1_dist':
+            # A brief H-bond interaction between dfg-D and b5-strand-Thr observed in the dfg-in to dfg-inter transition 
+            indices['dfg_D-cg'] = find_atomid(top, 'ASP381-CG')
+            indices['b5_T-og1'] = find_atomid(top, 'THR315-OG1')
+        if feature == 'interHbond2_dist':
+            # A stable H-bond interaction between the Asp381 and Val299 backbone oxygen 
+            # in the dfg-inter conformations
+            # Asp not protonated -- will the H-bond still there? 
+            indices['dfg_D-cg'] = find_atomid(top, 'ASP381-CG')
+            indices['b4_backbone'] = find_atomid(top, 'VAL299-O')
+        if feature == 'interpipi_dist':
+            # A brief pi-pi stacking between dfg-f and hrd-h formed during dfg-inter -> out transition
+            indices['dfg_F-cg'] = find_atomid(top, 'PHE382-CG')
+            indices['hrd_H-ne2'] = find_atomid(top, 'HIS361-NE2')
+        if feature == 'outpipi_dist':
+            # Pi-Pi stacking between dfg-f and p-loop aromatic in DFG-out conformations 
+            indices['dfg_F-cg'] = find_atomid(top, 'PHE382-CG')
+            indices['ploop_ring-cg'] = find_atomid(top, 'TYR253-CG')
+        if feature == 'pathway_angle':
+            # The angle formed by dfg-F CZ, dfg-D CG, and a close lysine backbone O
+            # This angle should either increase or decrease during the flipping
+            # with peak differences at intermediate DFG configurations
+            indices['dfg-F-cg'] = find_atomid(top, 'PHE382-CG')
+            indices['dfg_D-cg'] = find_atomid(top, 'ASP381-CG')
+            indices['(D-3)_K-O'] = find_atomid(top, 'LYS378-O')
 
     elif protein == 'egfr':
         ########## DFG spatial distances atom ids ############
@@ -88,6 +119,38 @@ def get_feature_indices(top, protein, feature):
             indices['aC_start']    = np.where([str(res) == 'LYS757' for res in top.residues])[0][0]
             indices['aC_end']      = np.where([str(res) == 'SER768' for res in top.residues])[0][0]
 
+        ########## Features from the mechanism paper to track DFG-flip ############ 
+        if feature == 'inHbond_dist':
+            # The Tyr found in Abl1 is replaced by a Phe in EGFR 
+            # Consequently there's shouldn't be any H-bond
+            # We still measure the distance between Asp and Phe as a comparison 
+            indices['dfg_D-cg'] = find_atomid(top, 'ASP855-CG')
+            indices['ploop_Hdonor'] = find_atomid(top, 'PHE723-CZ')
+        if feature == 'interHbond1_dist':
+            # A brief H-bond interaction between dfg-D and b5-strand-Thr observed in the dfg-in to dfg-inter transition 
+            indices['dfg_D-cg'] = find_atomid(top, 'ASP855-CG')
+            indices['b5_T-og1'] = find_atomid(top, 'THR790-OG1')
+        if feature == 'interHbond2_dist':
+            # A stable H-bond interaction between the Asp and Cys(?) backbone oxygen 
+            # in the dfg-inter conformations
+            # Asp not protonated -- will the H-bond still there? 
+            indices['dfg_D-cg'] = find_atomid(top, 'ASP855-CG')
+            indices['b4_backbone'] = find_atomid(top, 'CYS775-O')
+        if feature == 'interpipi_dist':
+            # A brief pi-pi stacking between dfg-f and hrd-h 
+            indices['dfg_F-cg'] = find_atomid(top, 'PHE856-CG')
+            indices['hrd_H-ne2'] = find_atomid(top, 'HIS835-NE2')
+        if feature == 'outpipi_dist':
+            # Pi-Pi stacking between dfg-f and p-loop aromatic in DFG-out conformations 
+            indices['dfg_F-cg'] = find_atomid(top, 'PHE856-CG')
+            indices['ploop_ring-cg'] = find_atomid(top, 'PHE723-CG')
+        if feature == 'pathway_angle':
+            # The angle formed by dfg-F CZ, dfg-D CG, and a close lysine backbone O
+            # This angle should either increase or decrease during the flipping
+            # with peak differences at intermediate DFG configurations
+            indices['dfg-F-cg'] = find_atomid(top, 'PHE856-CG')
+            indices['dfg_D-cg'] = find_atomid(top, 'ASP855-CG')
+            indices['(D-3)_K-O'] = find_atomid(top, 'LYS852-O')
     else:
         raise ValueError('Protein name cannot be recognised.')
 

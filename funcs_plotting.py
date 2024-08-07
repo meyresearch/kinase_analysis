@@ -320,22 +320,22 @@ def plot_dihed_pie(spatial_counts, dihed_counts, radius_size=0.5,
     dihed_cluster_labels = ['noise', 'BLAminus', 'BLAplus', 'ABAminus', 'BLBminus', 'BLBplus', 'BLBtrans', 'noise', 'BABtrans', 'noise', 'BBAminus']
     spatial_cluster_labels = ['DFG-in', 'DFG-inter', 'DFG-out']
     
-    outer_colors = [
-    (128/255, 128/255, 128/255),  # Gray
-    (235/255, 95/255, 70/255),    # Light Red
-    (240/255, 146/255, 58/255),   # Flamebright
-    (255/255, 214/255, 92/255),   # Light yellow
-    (255/255, 188/255, 214/255),  # Light pink
-    (210/255, 180/255, 140/255),  # Tan
-    (196/255, 79/255, 108/255),   # Strawberry
-    (128/255, 128/255, 128/255),  # Gray
-    (25/255, 189/255, 85/255),    # Light Green
-    (128/255, 128/255, 128/255),  # Gray
-    (136/255, 75/255, 204/255)]   # Light Purple
-    inner_colors = [
-     (173/255, 35/255, 10/255),  # Red
-     (28/225, 128/255, 65/255),  # Green
-     (80/255, 29/255, 138/255)]  # Purple
+    outer_colors = np.array([
+    (128/255, 128/255, 128/255),   # Gray
+    (235/255, 95/255, 70/255),     # Light Red
+    (240/255, 146/255, 58/255),    # Flamebright
+    (255/255, 214/255, 92/255),    # Light yellow
+    (255/255, 188/255, 214/255),   # Light pink
+    (210/255, 180/255, 140/255),   # Tan
+    (196/255, 79/255, 108/255),    # Strawberry
+    (128/255, 128/255, 128/255),   # Gray
+    (25/255, 189/255, 85/255),     # Light Green
+    (128/255, 128/255, 128/255),   # Gray
+    (136/255, 75/255, 204/255)])   # Light Purple
+    inner_colors = np.array([
+    (173/255, 35/255, 10/255),   # Red
+    (28/225, 128/255, 65/255),   # Green
+    (80/255, 29/255, 138/255)])  # Purple
 
     filtered_spatial_cluster_labels = [label if count/sum(spatial_counts) >= 0.05 else '' for label, count in zip(spatial_cluster_labels, spatial_counts)]
     filtered_dihed_cluster_labels = [label if count/sum(sum(dihed_counts,[])) >= 0.05 else '' for label, count in zip(dihed_cluster_labels, sum(dihed_counts,[]))]
