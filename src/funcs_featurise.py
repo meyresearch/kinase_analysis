@@ -4,6 +4,8 @@ from typing import *
 from funcs_indices import *
 
 
+################## Features from Dunbrack paper ####################
+
 def dbdist_featuriser(traj, protein, save_to_disk=None) -> np.ndarray:
     ########## Dunbrack DFG distances ############
     # d1 = dist(αC-Glu(+4)-Cα, DFG-Phe-Cζ) 
@@ -102,6 +104,50 @@ def achelixdihed_featuriser(traj, protein, save_to_disk=None) -> np.ndarray:
     dihedrals = np.concatenate([phi, psi], axis=1)
     if save_to_disk is not None: np.save(save_to_disk, dihedrals)
     return dihedrals
+
+
+################## Features from the mechanism paper ####################
+
+def inHbonddist_featuriser(traj, protein, save_to_disk=None) -> np.ndarray:
+    indices = get_feature_indices(traj.topology, protein, 'inHbond_dist')
+    distance = md.compute_distances(traj, [[indices['dfg_D-cg'], indices['ploop_Hdonor']]])
+    if save_to_disk is not None: np.save(save_to_disk, distance)
+    return distance
+
+
+def interHbond1dist_featuriser(traj, protein, save_to_disk=None) -> np.ndarray:
+    indices = get_feature_indices(traj.topology, protein, 'interHbond1_dist')
+    distance = md.compute_distances(traj, [[indices['dfg_D-cg'], indices['b5_T-og1']]])
+    if save_to_disk is not None: np.save(save_to_disk, distance)
+    return distance
+
+
+def interHbond2dist_featuriser(traj, protein, save_to_disk=None) -> np.ndarray:
+    indices = get_feature_indices(traj.topology, protein, 'interHbond2_dist')
+    distance = md.compute_distances(traj, [[indices['dfg_D-cg'], indices['b4_backbone']]])
+    if save_to_disk is not None: np.save(save_to_disk, distance)
+    return distance
+
+
+def interpipidist_featuriser(traj, protein, save_to_disk=None) -> np.ndarray:
+    indices = get_feature_indices(traj.topology, protein, 'interpipi_dist')
+    distance = md.compute_distances(traj, [[indices['dfg_F-cg'], indices['hrd_H-ne2']]])
+    if save_to_disk is not None: np.save(save_to_disk, distance)
+    return distance
+
+
+def outpipidist_featuriser(traj, protein, save_to_disk=None) -> np.ndarray:
+    indices = get_feature_indices(traj.topology, protein, 'outpipi_dist')
+    distance = md.compute_distances(traj, [[indices['dfg_F-cg'], indices['ploop_ring-cg']]])
+    if save_to_disk is not None: np.save(save_to_disk, distance)
+    return distance
+
+
+def pathwayangle_featuriser(traj, protein, save_to_disk=None) -> np.ndarray:
+    indices = get_feature_indices(traj.topology, protein, 'pathway_angle')
+    angle = md.compute_angles(traj, [[indices['dfg_D-cg'], indices['dfg_D-cg'], indices['(D-3)_K-O']]])
+    if save_to_disk is not None: np.save(save_to_disk, angle)
+    return angle
 
 
 def featurise(featurisers: List, traj: md.Trajectory) -> np.ndarray:

@@ -1,9 +1,11 @@
 import re
-import os
+import os, sys
 from natsort import natsorted
 from tqdm import tqdm
 from pathlib import Path
 import builtins
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'src')))
+
 from funcs_indices import *
 from funcs_featurise import *
 from funcs_db_assign import *
@@ -22,7 +24,6 @@ if __name__ == "__main__":
     traj_files = natsorted([traj for traj in traj_dir.rglob('run*-clone?.h5')])
     
     ref = md.load(traj_files[0])
-    indices = get_feature_indices(ref.topology, protein)
     max_run_no = max([int(re.search(r'run([0-9]+)-clone[0-9]+\.h5', f.name).group(1)) for f in traj_files])
 
     save_dir = Path(f'/home/rzhu/Desktop/projects/kinase_analysis/data/{protein}/ftrajs/')
@@ -31,7 +32,12 @@ if __name__ == "__main__":
     # No need to align to a reference structure as all the features are internal degrees of freedoms
     # ref = md.load('/arc/egfr_equilibrated_strucs/RUN0_solute_equilibrated.pdb')
     
-    featurisers = []
+    featurisers = [inHbonddist_featuriser,
+                   interHbond1dist_featuriser,
+                   interHbond2dist_featuriser,
+                   interpipidist_featuriser,
+                   outpipidist_featuriser,
+                   pathwayangle_featuriser]
     print(f'Featurisers: {[f.__name__ for f in featurisers]}')
 
     # Loop over runs
@@ -60,7 +66,7 @@ if __name__ == "__main__":
                             break
 
                     try:
-                        _ = featuriser(md_traj, save_to_disk=ftraj_dir)
+                        _ = featuriser(md_traj, protein, save_to_disk=ftraj_dir)
                         print('Featurised', traj.stem, f"{featuriser.__name__.split('_')[0]} ftraj.")
                     except Exception as err:
                         if os.path.exists(ftraj_dir): os.remove(ftraj_dir)
