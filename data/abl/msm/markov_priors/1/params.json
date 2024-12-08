@@ -1,0 +1,19 @@
+{
+    "hp_id": 1,
+    "datasets": "abl-pdb-1ns",
+    "features": "dbdist dbdihed achelix aloop",
+    "dt_out": 1,
+    "time_cutoff": 100,
+    "tica_lag_time": 1,
+    "tica_stride": 1000,
+    "tica_dim": 20,
+    "tica_kinetic_map": true,
+    "cluster_n": 1000,
+    "cluster_stride": 1000,
+    "cluster_max_iter": 1000,
+    "seed": 42,
+    "markov_lag_time": 10,
+    "markov_count_mode": "effective",
+    "markov_count_prior": 1,
+    "msm_mode": "bayesian"
+}

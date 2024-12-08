@@ -1,0 +1,8 @@
+hp_id,datasets,features,dt_out,time_cutoff,tica_lag_time,tica_stride,tica_dim,tica_kinetic_map,cluster_n,cluster_stride,cluster_max_iter,seed,markov_lag_time,markov_count_mode,markov_count_prior,msm_mode
+1,abl-pdb-1ns,dbdist dbdihed achelix aloop,1,50,1,1000,20,TRUE,1000,1000,1000,42,1,effective,10,bayesian
+2,abl-pdb-1ns,dbdist dbdihed achelix aloop,1,50,1,1000,20,TRUE,1000,1000,1000,42,2,effective,10,bayesian
+3,abl-pdb-1ns,dbdist dbdihed achelix aloop,1,50,1,1000,20,TRUE,1000,1000,1000,42,5,effective,10,bayesian
+4,abl-pdb-1ns,dbdist dbdihed achelix aloop,1,50,1,1000,20,TRUE,1000,1000,1000,42,10,effective,10,bayesian
+5,abl-pdb-1ns,dbdist dbdihed achelix aloop,1,50,1,1000,20,TRUE,1000,1000,1000,42,20,effective,10,bayesian
+6,abl-pdb-1ns,dbdist dbdihed achelix aloop,1,50,1,1000,20,TRUE,1000,1000,1000,42,30,effective,10,bayesian
+7,abl-pdb-1ns,dbdist dbdihed achelix aloop,1,50,1,1000,20,TRUE,1000,1000,1000,42,40,effective,10,bayesian
