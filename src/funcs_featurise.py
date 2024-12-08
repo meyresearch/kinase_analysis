@@ -145,19 +145,14 @@ def outpipidist_featuriser(traj, protein, save_to_disk=None) -> np.ndarray:
 
 def pathwayangle_featuriser(traj, protein, save_to_disk=None) -> np.ndarray:
     indices = get_feature_indices(traj.topology, protein, 'pathway_angle')
-    angle = md.compute_angles(traj, [[indices['dfg_D-cg'], indices['dfg_D-cg'], indices['(D-3)_K-O']]])
+    angle = md.compute_angles(traj, [[indices['dfg_F-cg'], indices['dfg_D-cg'], indices['(D-3)_K-O']]])
     if save_to_disk is not None: np.save(save_to_disk, angle)
     return angle
 
 
-def featurise(featurisers: List, traj: md.Trajectory) -> np.ndarray:
-    assert type(traj) == md.Trajectory
-    
-    ftraj_list = []
-    for featuriser in featurisers:
-        ftraj = featuriser(traj)
-        if ftraj.dim == 1: 
-            ftraj = ftraj[:, np.newaxis]
-        ftraj_list.append(ftraj)
-
-    return np.concatenate(ftraj_list, axis=1)
+def alooprmsd_featuriser(traj, protein, reference, save_to_disk=None) -> np.ndarray:
+    indices = get_feature_indices(traj.topology, protein, 'aloop')
+    traj = traj.superpose(reference, atom_indices=traj.topology.select('name CA'))
+    rmsd = md.rmsd(traj, reference, atom_indices=traj.topology.select(f'resid {indices["aloop_start"]} to {indices["aloop_end"]}'))
+    if save_to_disk is not None: np.save(save_to_disk, rmsd)
+    return rmsd
