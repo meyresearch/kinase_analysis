@@ -9,8 +9,10 @@ tests/
 **/ftrajs/
 **/dtrajs/
 **/ttrajs/
+**/models/
 **/samples/
 **/visualisation/
+**/movie/
 
 *.bmp
 *.bmp.bmp
@@ -18,3 +20,4 @@ tests/
 *.gif 
 *_tmat.npy
 *.npz
+*.ppm
