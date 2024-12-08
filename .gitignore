@@ -1,12 +1,16 @@
-.ipynb_checkpoints/
-__pycache__/
+**/.ipynb_checkpoints/
+**/__pycache__/
+**/.vscode/
+
 archived/
 tests/
-
-data/egfr/ftrajs/
-data/egfr/plots/movie/
-data/abl/ftrajs/
-data/abl/plots/movie/
+**/co-projection/
+**/vmd/
+**/ftrajs/
+**/dtrajs/
+**/ttrajs/
+**/samples/
+**/visualisation/
 
 *.bmp
 *.bmp.bmp
@@ -14,6 +18,3 @@ data/abl/plots/movie/
 *.gif 
 *_tmat.npy
 *.npz
-
-log_*
-
