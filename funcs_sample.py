@@ -41,7 +41,7 @@ def sample_frames_by_features(ftrajs_list: List[List[np.ndarray]], ftraj_range_l
         frames_to_sample_from.extend([[i, j] for j in true_indices])
     samples = np.array(frames_to_sample_from)[np.random.choice(range(len(frames_to_sample_from)), n_samples)]
 
-    if mapping is not None: samples = _map_to_original_trajs(samples, mapping)
+    if mapping is not None: samples = map_to_original_trajs(samples, mapping)
 
     return samples
 
@@ -94,19 +94,19 @@ def sample_frames_by_states(state_samples_count, dtrajs, mapping=None) -> List[n
     for state_to_sample_from, n_samples in state_samples_count.items():
         samples.append(np.array(index_states[state_to_sample_from])[np.random.choice(range(len(index_states[state_to_sample_from])), n_samples)])
     samples = np.concatenate(samples)
-    if mapping is not None: samples = _map_to_original_trajs(samples, mapping)
+    if mapping is not None: samples = map_to_original_trajs(samples, mapping)
 
     return samples
 
 
-def simulated_traj_to_samples(traj_of_states, dtrajs, mapping=None) -> np.ndarray:
+def simulated_traj_to_samples(traj_of_states, dtrajs, stride=1, mapping=None) -> np.ndarray:
 
     index_states = compute_index_states(dtrajs)
     samples = []
     for state in traj_of_states:
         samples.append(np.array(index_states[state])[np.random.choice(range(len(index_states[state])), 1)])
     samples = np.concatenate(samples)
-    if mapping is not None: samples = _map_to_original_trajs(samples, mapping)
+    if mapping is not None: samples = map_to_original_trajs(samples, mapping, stride=stride)
 
     return samples
 
@@ -132,9 +132,9 @@ def save_samples(samples, traj_files, save_dir, reference=None):
     return None
 
 
-def _map_to_original_trajs(samples, traj_mapping) -> List[np.ndarray]:
+def map_to_original_trajs(samples, traj_mapping, stride=1) -> List[np.ndarray]:
     """
     Map the sampled filtered trajectory indices to the original trajectory indices
     """
-    samples_mapped = [(traj_mapping[sample[0]], sample[1]) for sample in samples]
+    samples_mapped = [(traj_mapping[sample[0]], sample[1]*stride) for sample in samples]
     return np.array(samples_mapped)

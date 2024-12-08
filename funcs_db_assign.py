@@ -22,7 +22,7 @@ def dihedral_distance(vector1, vector2):
 
 def assign_dfg_spatial(dbdist, centroids=None):
     """
-    Assign Abl conformations to a one of the 3 spatial clusters based on the distance to the cluster's centroid.
+    Assign conformations to a one of the 3 spatial clusters based on the distance to the cluster's centroid.
     Cluster indices for DFG spatial groups: 0 : DFG-in,
                                             1 : DFG-inter,
                                             2 : DFG-out
@@ -36,7 +36,7 @@ def assign_dfg_spatial(dbdist, centroids=None):
 
 def assign_dfg_dihed(dbdihed, spatial_assignment, centroids=None, noise_cutoff=1):
     """
-    Assign a SINGLE Abl conformation to a one of the seven dihedral clusters based on the distance to the cluster's centroid.
+    Assign a SINGLE conformation to a one of the seven dihedral clusters based on the distance to the cluster's centroid.
     Cluster indices:   -1 : noise,
                         --- DFG-in ---
                         0 : BLAminus,

@@ -71,7 +71,7 @@ def plot_fe(traj_all, traj_weights, savedir=None, fes_cmap='nipy_spectral',
             c_centers=None, d_centers=None, 
             c_centers_s=10, c_centers_marker='.', c_centers_a=0.8, c_centers_c='black',
             d_centers_s=10, d_centers_marker='X', d_centers_a=0.8, d_centers_c='black', d_edgecolor='white', d_linewidth=1,
-            state_assignment=None, state_population=None, pcca_cmap='gist_rainbow', edgecolor='black', linewidth=1,
+            state_assignment=None, n_states= None, state_population=None, pcca_cmap='gist_rainbow', edgecolor='black', linewidth=1,
             legend_marker_sizes=100,
             title=''):
     
@@ -79,7 +79,6 @@ def plot_fe(traj_all, traj_weights, savedir=None, fes_cmap='nipy_spectral',
     ax, contour, cbar = plot_energy2d(energy2d(traj_all[:, dim_1], traj_all[:, dim_2], weights=traj_weights), ax=ax, contourf_kws=dict(cmap=fes_cmap))
     
     if state_assignment is not None:
-        n_states = len(np.unique(state_assignment))
         colours = [plt.cm.get_cmap(pcca_cmap)(i/(n_states-1)) for i in range(n_states)]
         if state_population is not None:
             for i in range(n_states):
