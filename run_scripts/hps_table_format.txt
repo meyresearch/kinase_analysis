@@ -1,0 +1,50 @@
+'''
+The hyperparameter table for the MSM estimation contains the following columns:
+
+hp_id: int
+    The unique identifier for this hyperparameter set
+
+Trajectory hyperparameters
+--------------------------
+datasets: list
+    The list of datasets to be used. Should be consistent with the `keys` in TrajData object.
+features: list
+    The internal names of features to be used for the MSM estimation. Should be consistent with the `internal_names` in TrajData object.
+dt_out: float
+    The time interval to convert the ftrajs to. In unit of ns
+time_cutoff: int
+    The minimum time (in unit of ns) of feature trajectories for them to be included
+
+TICA hyperparameters
+--------------------
+tica_lag_time: int or float
+    The tICA lag time (in unit of ns) for the TICA estimation
+tica_stride: int
+    The stride to sample the feature trajectories for the TICA estimation
+tica_dim: int
+    The number of dimensions to keep for the TICA transformation
+tica_kinetic_map: bool
+    Whether to use the kinetic map for the TICA transformation
+
+KMeans hyperparameters
+----------------------
+cluster_n: int
+    The number of clusters to use for the KMeans clustering
+cluster_stride: int
+    The stride to sample the TICA-transformed trajectories for the KMeans clustering
+cluster_max_iter: int
+    The maximum number of iterations for the KMeans clustering
+seed: int
+    The random seed for the KMeans clustering
+
+MSM hyperparameters
+-------------------
+markov_lag_time: int or float
+    The Markov lag time (in unit of ns) for the MSM estimation
+markov_count_mode: str
+    The mode for counting the transitions. Can be 'sliding' or 'sample' or 'effective' or 'sliding-effective'
+markov_count_prior: int
+    The number of prior counts added to the transition count matrix
+msm_mode: str
+    The type of the MSM model. Can be 'bayesian' or 'maximum_likelihood'
+'''
