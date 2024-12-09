@@ -66,7 +66,7 @@ class TrajData():
         return f'TrajData for: {self._protein}\nDatasets: {list(self.datasets.keys())}'
 
 
-    def featurize(self, key, featurisers, feature_names=None, **kwargs):
+    def featurize(self, key, featurisers, feature_names=None, top=None, **kwargs):
         '''
         Featurize the trajectories in rtraj_dir and save the feature trajectories to ftraj_dir.
 
@@ -78,6 +78,8 @@ class TrajData():
             A list of functions that featurize the trajectories
         feature_names : list or None
             A list of names for saving featurised trajectories. If None, the names will be the same as the featurisers
+        top : str or None
+            The topology file for the trajectories. If None, assume the trajectory format include topology information
         kwargs : dict
             Some featuring functions may require additional arguments
         '''
@@ -94,7 +96,7 @@ class TrajData():
         print(f'Featurising protein {self.protein}')
         print(f'Featurisers: {[f.__name__ for f in featurisers]}')
 
-        for traj in tqdm(traj_files, total=len(traj_files)):
+        for i, traj in tqdm(enumerate(traj_files), total=len(traj_files)):
             md_traj = None
             print('Featurising', traj.stem)
 
@@ -105,59 +107,27 @@ class TrajData():
             
             for featuriser, name in zip(featurisers, names):
                 ftraj_f = save_dir / f"{traj.stem}_{name}.npy"
+                # ftraj_f = save_dir / f"{name}{i}.npy"
                 if ftraj_f.is_file():
                     print(traj.stem, f"{name} ftraj already exist.")
                     continue
 
                 if md_traj is None:
                     try:
-                        md_traj = md.load(traj)
+                        if top is None:
+                            md_traj = md.load(traj)
+                        else:
+                            md_traj = md.load(traj, top=top)
                     except:
                         print(f'!!! Fail to read {traj} !!!')
                         break
 
                 try:
-                    _ = featuriser(md_traj, self._protein, save_to_disk=ftraj_f, **kwargs)
+                    _ = featuriser(md_traj, self.protein, save_to_disk=ftraj_f, **kwargs)
                     print('Featurised', traj.stem, f"{name} ftraj.")
                 except Exception as err:
                     if os.path.exists(ftraj_f): os.remove(ftraj_f)
                     print(f"Fail to featurise {traj.stem} with {name}:\n{err}")
-
-        '''
-        for i in tqdm(range(max_run_no+1), total=max_run_no+1):
-            trajs = natsorted([p for p in raw_traj_dir.glob(f'run{i}-clone?.h5')])
-            print(f'Run {i}: {len(trajs)} trajectories to be featurised.')
-
-            # Loop over clones
-            for traj in trajs:
-                md_traj = None
-                print('Featurising', traj.stem)
-
-                if feature_names is None:
-                    names = [featuriser.__name__.split('_')[0] for featuriser in featurisers]
-                else:
-                    names = feature_names
-                
-                for featuriser, name in zip(featurisers, names):
-                    ftraj_f = save_dir / f"{traj.stem}_{name}.npy"
-                    if ftraj_f.is_file():
-                        print(traj.stem, f"{name} ftraj already exist.")
-                        continue
-
-                    if md_traj is None:
-                        try:
-                            md_traj = md.load(traj)
-                        except:
-                            print(f'!!! Fail to read {traj} !!!')
-                            break
-
-                    try:
-                        _ = featuriser(md_traj, self._protein, save_to_disk=ftraj_f, **kwargs)
-                        print('Featurised', traj.stem, f"{name} ftraj.")
-                    except Exception as err:
-                        if os.path.exists(ftraj_f): os.remove(ftraj_f)
-                        print(f"Fail to featurise {traj.stem} with {name}:\n{err}")
-        '''
 
 
     def load_ftrajs(self, key, feature_names, internal_names=None):
