@@ -168,7 +168,7 @@ class MSMEstimation():
         # If the model is Bayesian, report the results of the prior (maximum likelihood) model and collect the standard deviations
         if hp_dict.msm_mode == 'bayesian':
             no = min(msm_mod.prior.transition_matrix.shape[0]-1, n_score)
-            sparse_dict = {'is_sparse' : msm_mod.prior.transition_matrix.shape[0] != hp_dict.cluster_k}
+            sparse_dict = {'is_sparse' : msm_mod.prior.transition_matrix.shape[0] != hp_dict.cluster_n}
             for k in range(no):
                 ev_dict[f'ev_{k+1}'] = msm_mod.prior.eigenvalues()[k]
                 ev_std_dict[f'ev_std_{k+1}'] = msm_mod.gather_stats('eigenvalues').std[k]
