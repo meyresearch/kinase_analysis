@@ -193,7 +193,7 @@ def plot_pcca_graph(traj_all, traj_weights,
     return None
 
 
-def plot_ts(timescales, n_ts, markov_lag, savedir, scaling=0.00005, unit="$\mathrm{\mu s}$"):
+def plot_ts(timescales, n_ts, markov_lag, savedir):
     '''
     Plot implied timescales of processes from a Maximum likihood MSM or Bayesian MSM samples. 
     
@@ -204,30 +204,27 @@ def plot_ts(timescales, n_ts, markov_lag, savedir, scaling=0.00005, unit="$\math
     n_ts : int
         Number of timescales to plot.
     markov_lag : int
-        Markov lag used to estimate the MSM in unit of step.
-    scaling : float
-        How many unit (microsecond by default) per step.
-    unit : str
-        Timescale unit used for plotting
+        The lag time used to construct the MSM in ns.
+    savedir : str
+        Path to save the plot. If None, the plot will be displayed but not saved.
     '''
     
     fig, ax = plt.subplots(figsize=(8, 4))
 
     x = np.arange(n_ts)+2
-    markov_lag_scaled = markov_lag * scaling   
     if timescales.ndim == 1:
-        y = timescales[:n_ts]*scaling
+        y = timescales[:n_ts]*markov_lag/1000
         if len(timescales) < n_ts: UserWarning("Not enough timescales to plot.")
         ax.plot(x, y, marker='o', markersize=10)
     elif timescales.ndim == 2:
-        y = timescales.mean(axis=0)[:n_ts]*scaling
-        yerr = timescales.std(axis=0)[:n_ts]*scaling
+        y = timescales.mean(axis=0)[:n_ts]*markov_lag/1000
+        yerr = timescales.std(axis=0)[:n_ts]*markov_lag/1000
         if timescales.shape[1] < n_ts: UserWarning("Not enough timescales to plot.")
         ax.errorbar(x, y, yerr=yerr, fmt='o', markersize=5, capsize=6, capthick=2, ls='-', ecolor='black')
     else:
         raise ValueError("timescales must have shape (n_markov_states) or (n_markov_states, n_samples)")
     
-    ax.fill_between([0, n_ts+2], y1=markov_lag_scaled, y2=0, color='grey', alpha=0.8)
+    ax.fill_between([0, n_ts+2], y1=markov_lag/1000, y2=0, color='grey', alpha=0.8)
 
     ax.set_yscale('log')
     ax.grid(visible=True, axis='y')
@@ -236,7 +233,7 @@ def plot_ts(timescales, n_ts, markov_lag, savedir, scaling=0.00005, unit="$\math
     ax.set_ylim([min(y)/3, max(y)*3])
 
     ax.set_xticks(np.arange(2, n_ts+2, 1))
-    ax.set_ylabel(rf"Timescale ({unit})", fontsize=14)
+    ax.set_ylabel(r"Timescale ($\mathrm{\mu s}$)", fontsize=14)
     ax.set_xlabel(r"Timescale Index", fontsize=14)
     ax.tick_params(bottom=True, top=False, left=True, right=False)
 
@@ -275,10 +272,25 @@ def plot_pcca(state_assignment, c_centers, savedir, dim_1=0, dim_2=1, \
     return None
 
 
-def plot_mfpt_matrix(mfpt, mfpt_err=None, savedir=None, scaling=0.00005, unit="$\mathrm{\mu s}$", text_f =".2e"):
+def plot_mfpt_matrix(mfpt, markov_lag, mfpt_err=None, text_f =".2e", savedir=None):
+    """
+    Parameters
+    ----------
+    mfpt : np.ndarray (n_states, n_states)
+        Matrix of mean first passage times between states
+    markov_lag : float
+        Markov lag time in nanosecond
+    mfpt_err : optional, np.ndarray (n_states, n_states) 
+        Matrix of standard error of mean first passage times between states
+    text_f : optional, str
+        Format of the text in the plot        
+    savedir : optional, str
+        Path to save the plot
+
+    """
     n_states = mfpt.shape[0]
-    mfpt_scaled = mfpt*scaling # How many microseconds per step?
-    mfpt_err_scaled = mfpt_err*scaling if mfpt_err is not None else None
+    mfpt_scaled = mfpt*markov_lag/1000
+    mfpt_err_scaled = mfpt_err*markov_lag/1000 if mfpt_err is not None else None
     norm = mpl.colors.Normalize(vmin=np.min(mfpt_scaled), vmax=np.max(mfpt_scaled))
 
     fig,ax = plt.subplots(1,figsize=(10,10))
@@ -303,7 +315,7 @@ def plot_mfpt_matrix(mfpt, mfpt_err=None, savedir=None, scaling=0.00005, unit="$
     ax.set_title('MFPT Matrix', fontsize=25)
 
     cbar.ax.tick_params(labelsize=16)
-    cbar.ax.set_ylabel(rf"State$_i$ --> State$_j$ MFPT ({unit})", fontsize=16)
+    cbar.ax.set_ylabel(r"State$_i$ --> State$_j$ MFPT ($\mathrm{\mu s}$)", fontsize=16)
 
     if savedir is not None:
         plt.savefig(savedir, transparent=True, bbox_inches='tight', dpi=300)

@@ -32,7 +32,7 @@ class TrajData():
         Parameters
         ----------
         key : str
-            Key to access the simulation dataset        
+            Key to access the simulation dataset
         rtraj_dir : str or Path
             Directory of the raw simulation trajectories
         ftraj_dir : str or Path

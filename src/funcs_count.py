@@ -86,7 +86,7 @@ class PriorTransitionCountEstimator(TransitionCountEstimator):
     
 
     @staticmethod
-    def count(count_mode: str, dtrajs: list[np.ndarray], lagtime: int, sparse: bool = False, n_jobs=None, prior: float = 0):
+    def count(count_mode: str, dtrajs: list[np.ndarray], lagtime: int, sparse: bool = False, n_jobs=None, prior: bool = False):
         """
         Extended count method with support for prior counts.
         """
@@ -104,11 +104,13 @@ class PriorTransitionCountEstimator(TransitionCountEstimator):
         else:
             raise ValueError(f"Count mode {count_mode} is unknown.")
         
-        # Add prior counts if specified
-        if prior > 0:
+        # Calculate the prior as 1/row_sum and add to the count matrix
+        if prior:
             if issparse(count_matrix):
-                count_matrix.data += prior 
+                prior = np.array([1/sum(row) if sum(row)!=0 else 10^-5 for row in count_matrix.data[:,]] )
+                count_matrix.data += (np.ones((prior.size, 1)) * prior).T
             else:
-                count_matrix += prior
+                prior = 1/np.sum(count_matrix, axis=1)
+                count_matrix += (np.ones((prior.size, 1)) * prior).T
 
         return count_matrix

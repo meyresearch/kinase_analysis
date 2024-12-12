@@ -81,7 +81,7 @@ class MSMStudy():
         print('Loading models...')
         model_dir = self.save_dir/'models'
         with open(model_dir/'mapping.json', 'rb') as f:
-            self.mapping = json.load(f)
+            self.mapping = {int(k):int(v) for k,v in json.load(f).items()}
         with open(model_dir/'tica_model.pkl', 'rb') as f:
             self.tica_mod = pickle.load(f)
         with open(model_dir/'kmeans_model.pkl', 'rb') as f:

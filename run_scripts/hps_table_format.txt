@@ -43,8 +43,8 @@ markov_lag_time: int or float
     The Markov lag time (in unit of ns) for the MSM estimation
 markov_count_mode: str
     The mode for counting the transitions. Can be 'sliding' or 'sample' or 'effective' or 'sliding-effective'
-markov_count_prior: int
-    The number of prior counts added to the transition count matrix
+markov_count_prior: bool
+    Whether to add the 1/row_sum to the transition count matirx for better reversibility
 msm_mode: str
     The type of the MSM model. Can be 'bayesian' or 'maximum_likelihood'
 '''

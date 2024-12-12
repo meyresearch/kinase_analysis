@@ -22,4 +22,4 @@ msm_est = MSMEstimation(
     wk_dir='/home/rzhu/Desktop/projects/kinase_analysis/data/abl/msm/markov_priors'
 )
 
-msm_est.run_studies(hp_indices=[1,2,3,4,5,6])
+msm_est.run_studies(hp_indices=[1,2,3,4])
