@@ -21,4 +21,4 @@ python kinase_analysis/src/run_msm.py \
 	--hp_idx 1 2 \
 	--wk_dir /exports/eddie/scratch/s2135271/kinase_analysis/data/met/msm/af2-merged-markov_lags \
 	--datasets "met-af2-1ns,.,/exports/eddie/scratch/s2135271/kinase_analysis/data/met/met-af2-1ns/ftrajs/,1" \
-		   "met-af2-50ps,.,/exports/eddie/scratch/s2135271/kinase_analysis/data/met/met-af2-50ps/ftrajs/,0.05"
+		   	   "met-af2-50ps,.,/exports/eddie/scratch/s2135271/kinase_analysis/data/met/met-af2-50ps/ftrajs/,0.05"

@@ -1,6 +1,8 @@
 from pathlib import Path
 import pandas as pd
 import argparse
+import sys
+sys.path.insert(0, '/home/rzhu/Desktop/projects/kinase_analysis/src/')
 from MSMEstimation import MSMEstimation
 from TrajData import TrajData
 
