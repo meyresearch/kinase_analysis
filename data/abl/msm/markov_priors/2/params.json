@@ -12,8 +12,8 @@
     "cluster_stride": 1000,
     "cluster_max_iter": 1000,
     "seed": 42,
-    "markov_lag_time": 10,
+    "markov_lag_time": 20,
     "markov_count_mode": "effective",
-    "markov_count_prior": 5,
+    "markov_count_prior": true,
     "msm_mode": "bayesian"
 }

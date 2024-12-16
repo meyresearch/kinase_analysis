@@ -14,6 +14,6 @@
     "seed": 42,
     "markov_lag_time": 100,
     "markov_count_mode": "effective",
-    "markov_count_prior": 1,
+    "markov_count_prior": true,
     "msm_mode": "bayesian"
 }
