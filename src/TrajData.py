@@ -20,7 +20,7 @@ class TrajData():
             Name of the protein simulations
         '''
 
-        self.protein = protein.upper()
+        self.protein = protein
         self.datasets = dict()
         self._ftrajs = dict()
     
