@@ -117,10 +117,7 @@ def save_samples(samples, traj_files, save_dir, reference=None):
     """
 
     frames = [] 
-    for sample in samples:
-        sample_frame = md.load_frame(traj_files[sample[0]], index=sample[1])
-        sample_frame = sample_frame.atom_slice(sample_frame.top.select('mass>1.1'))
-        frames.append(sample_frame)
+
     if len(frames)>1:
         sampled_frames = md.join(frames)
     else:

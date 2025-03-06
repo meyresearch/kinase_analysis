@@ -1,20 +1,15 @@
-from pyemma.coordinates import tica 
-from pyemma.coordinates import cluster_kmeans
-import pyemma as pm
-
-from deeptime.markov import TransitionCountEstimator
-from deeptime.markov.msm import MaximumLikelihoodMSM
-from deeptime.markov.msm import BayesianMSM
-from deeptime.markov.tools import estimation
+from deeptime.markov.sample import compute_index_states
 import deeptime as dt
+import mdtraj as md 
 
 import json
 import pickle
 import numpy as np
 import pandas as pd
-from addict import Dict as Adict
 from pathlib import Path
 from natsort import natsorted
+from addict import Dict as Adict
+from collections import defaultdict
 
 
 class MSMStudy():
@@ -57,8 +52,14 @@ class MSMStudy():
         self.fig_dir.mkdir(exist_ok=True)
         self.sample_dir = self.save_dir / 'samples'
         self.sample_dir.mkdir(exist_ok=True)     
-
         self.hp_dict = Adict(self.hps_table.loc[self.hps_table['hp_id'] == hp_id].squeeze().to_dict())
+
+        for key in self.traj_data.datasets.keys():
+            ftraj_dt = self.traj_data.datasets[key]['dt']
+            dt_out = self.hp_dict['dt_out']
+            self.traj_data.datasets[key]['stride'] = int(dt_out/ftraj_dt)
+            print(f'Set dataset {key} stride to {self.traj_data.datasets[key]["stride"]}')
+
         print(f'Loading MSM model id {hp_id} from {self.save_dir}')
         print(f'{self.hp_dict}')
 
@@ -100,7 +101,7 @@ class MSMStudy():
         self.connected_states = np.load(model_dir/'connected_states.npy')
         self.disconnected_states = np.setdiff1d(np.arange(self.hp_dict.cluster_n), self.connected_states) 
 
-        print('Done')        
+        print('Done')
 
 
     def run_pcca(self, n):
@@ -131,6 +132,129 @@ class MSMStudy():
         pcca_assignment = np.array([self.micro_to_macro[d] for d in connected_d])
 
         return ttraj, dtraj, connected_d, disconnected_d, pcca_assignment
+    
+
+    def _get_state_count_from_distrib(self, microstate_weights, connected_states, n_samples):
+        """
+        Decide how many sample to take from states according to microstate weights
+
+        Parameters
+        ----------
+        microstate_distribution: ndarray( (n) )
+            A distribution over microstates to sample from
+        n_samples: int
+            The number of samples to be taken
+        
+        Returns
+        -------
+        state_samples_count: dict[int, int]
+            The states to sampled from : the number of samples to be taken
+        """
+        
+        assert len(microstate_weights) == len(connected_states), 'The distribution should have the same length as the connected states'
+
+        state_indices = np.random.choice(len(microstate_weights), size=n_samples, p=microstate_weights)
+        counts = np.bincount(state_indices)
+        state_samples_count = {connected_states[i]:count for i, count in enumerate(counts) if count!=0}
+
+        return state_samples_count
+
+
+    def _get_samples_from_state(self, state_samples_count):
+        index_states = compute_index_states(self.dtrajs)
+        samples = []
+        for state_to_sample_from, n_samples in state_samples_count.items():
+            samples.append(np.array(index_states[state_to_sample_from])[np.random.choice(range(len(index_states[state_to_sample_from])), n_samples)])
+        samples = np.concatenate(samples)
+
+        return samples
+    
+
+    def sample_from_distrib(self, distrib):
+        state_samples_count = self._get_state_count_from_distrib(distrib, self.connected_states, len(distrib))
+        samples = self._get_samples_from_state(state_samples_count)
+
+        return samples
+    
+
+    def sample_from_macrostate(self, n_sample, macrostate_id, ci_cutoff, weights='equilibrium'):
+        ci = self.pcca_mod.memberships[:, macrostate_id]
+        states_to_sample = ci > ci_cutoff
+
+        if weights == 'equilibrium':
+            stationary_distribution = self.msm_mod.stationary_distribution.copy()
+            stationary_distribution[~states_to_sample] = 0
+            weights = stationary_distribution / np.sum(stationary_distribution)
+        elif weights == 'uniform':
+            weights = np.zeros(self.msm_mod.n_states)
+            weights[states_to_sample] = 1
+            weights = weights / np.sum(weights)
+        else:
+            raise ValueError('weights should be either "stationary" or "uniform"')
+        
+        state_samples_count = self._get_state_count_from_distrib(weights, self.connected_states, n_sample)
+        samples = self._get_samples_from_state(state_samples_count)
+        
+        return samples
+
+
+    def sample_from_microstate(self, microstate_id, n_sample):
+        weights = np.zeros(self.msm_mod.connected_states.shape[0])
+        weights[microstate_id] = 1
+        state_samples_count = self._get_state_count_from_distrib(weights, self.connected_states, n_sample)
+        samples = self._get_samples_from_state(state_samples_count)
+        
+        return samples
+        
+
+    def _map_to_rtraj_samples(self, samples, dataset_keys):
+        datasets_study = {key: self.traj_data.datasets[key] for key in dataset_keys} # Datasets used in this study 
+        num_of_rtrajs_per_ds = {key:len(datasets_study[key]['rtraj_files']) for key in datasets_study.keys()}
+        stride_of_rtraj_idx = np.concatenate([np.ones(num)*datasets_study[k]['stride'] for k, num in num_of_rtrajs_per_ds.items()])
+
+        rtraj_samples = []
+        for ftraj_idx, frame_idx in samples:
+            rtraj_idx = self.mapping[ftraj_idx]
+            rframe_idx = frame_idx * stride_of_rtraj_idx[rtraj_idx]
+            rtraj_samples.append([rtraj_idx, rframe_idx])
+        return rtraj_samples
+
+
+    def save_samples(self, samples, fname, ref=None, save_ids=False):
+        dataset_keys = [f.strip() for f in self.hp_dict.datasets.lower().split(' ')] # Keys used in this study
+        traj_files = np.concatenate([self.traj_data.datasets[key]['rtraj_files'] for key in dataset_keys])
+    
+        fname = Path(fname)
+
+        rtraj_samples = self._map_to_rtraj_samples(samples, dataset_keys)
+        rtraj_sample_dict = defaultdict(list)
+        for traj_idx, frame_idx in rtraj_samples:
+            rtraj_sample_dict[traj_idx].append(frame_idx)
+        rtraj_sample_dict = {int(k): [int(v) for v in vals] for k, vals in rtraj_sample_dict.items()}
+        if save_ids:
+            with open(fname.with_suffix('.json'), 'w') as f:
+                json.dump(rtraj_sample_dict, f)
+    
+        frames = []
+        for traj_id, frame_idx in rtraj_sample_dict.items():
+            sample_traj = md.load(traj_files[traj_id])
+            sample_frames = sample_traj[frame_idx].atom_slice(sample_traj.top.select('mass>1.1'))
+            frames.append(sample_frames)
+        if len(frames)>1:
+            sampled_frames = md.join(frames)
+        else:
+            sampled_frames = frames[0]
+
+        if ref is not None:
+            try:
+                sampled_frames = sampled_frames.superpose(ref, atom_indices=sampled_frames.top.select('name CA'))
+            except:
+                print('Wrong reference. Saving unsuperposed frames.')
+        
+        if isinstance(fname, Path):
+            fname = fname.as_posix()
+        sampled_frames.save(fname)
+        print(f'Saved samples to {fname}')
     
 
     @property

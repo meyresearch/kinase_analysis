@@ -115,7 +115,7 @@ class MSMEstimation():
         
         for dataset in datasets:
             self.traj_data.load_ftrajs(key=dataset,
-                                    feature_names=features)
+                                       feature_names=features)
         ftrajs, mapping = self.traj_data.get_ftrajs(keys=datasets,
                                                     dt_out=hp_dict.dt_out,
                                                     internal_names=features, 

@@ -11,6 +11,13 @@ from deeptime.util import energy2d
 import numpy as np
 
 
+dfg_spatial_colors = np.array([(238, 66, 102),       # Pink-red DFG-in
+                               (255, 210, 63),       # Yellow DFG-inter
+                               (84, 13, 110),        # Purple DFG-out
+                               (89, 89, 89)])/255    # Grey undefined   
+dfg_dihed_colors = 
+
+
 def plot_ev(ev, c_centers, traj_all, traj_weights, title, savedir, dim_1=0, dim_2=1, dim_3=2, \
             ct_cmap='nipy_spectral', ct_a=0.6, ev_cmap='coolwarm', ev_a=0.8, ev_s=20, ev_marker='.', \
             ex=True, ex_s=100):

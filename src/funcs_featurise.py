@@ -155,4 +155,4 @@ def alooprmsd_featuriser(traj, protein, reference, save_to_disk=None) -> np.ndar
     traj = traj.superpose(reference, atom_indices=traj.topology.select('name CA'))
     rmsd = md.rmsd(traj, reference, atom_indices=traj.topology.select(f'resid {indices["aloop_start"]} to {indices["aloop_end"]}'))
     if save_to_disk is not None: np.save(save_to_disk, rmsd)
-    return rmsd
+    return rmsd 

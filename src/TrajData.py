@@ -4,6 +4,7 @@ from tqdm import tqdm
 import numpy as np
 import re 
 import os
+import json
 import mdtraj as md
 
 
@@ -96,18 +97,23 @@ class TrajData():
         print(f'Featurising protein {self.protein}')
         print(f'Featurisers: {[f.__name__ for f in featurisers]}')
 
+        if feature_names is None:
+            names = [featuriser.__name__.split('_')[0] for featuriser in featurisers]
+        else:
+            names = feature_names
+        
+        for name in names:
+            if not (save_dir / name).exists(): 
+                (save_dir / name).mkdir(parents=True, exist_ok=True)
+
         for i, traj in tqdm(enumerate(traj_files), total=len(traj_files)):
             md_traj = None
             print('Featurising', traj.stem)
 
-            if feature_names is None:
-                names = [featuriser.__name__.split('_')[0] for featuriser in featurisers]
-            else:
-                names = feature_names
-            
             for featuriser, name in zip(featurisers, names):
-                ftraj_f = save_dir / f"{traj.stem}_{name}.npy"
-                # ftraj_f = save_dir / f"{name}{i}.npy"
+                
+                ftraj_f = save_dir / name / f"{traj.stem}_{name}.npy"
+                # ftraj_f = save_dir / name / f"{traj.stem}.npy"
                 if ftraj_f.is_file():
                     print(traj.stem, f"{name} ftraj already exist.")
                     continue
@@ -139,7 +145,7 @@ class TrajData():
         key : str
             The key to the dataset
         feature_names : list
-            A list of strings of features. Should correspond to the suffix of ftraj files in the ftraj directory
+            A list of strings of features. Should correspond to the subdirectory of ftraj files in the ftraj directory
         internal_names : list or None
             A list of names to assign to the ftrajs loaded internally. If None, the names will be the same as the features
         '''
@@ -164,7 +170,7 @@ class TrajData():
             if name in self._ftrajs and self._ftrajs[name] is not None:
                 print(f'Feature {feature} already loaded as {name}. Skipping...')
             else:
-                ftraj_files = natsorted([str(ftraj) for ftraj in save_dir.glob(f'*_{feature}.npy')])
+                ftraj_files = natsorted([str(ftraj) for ftraj in (save_dir/name).glob(f'*_{feature}.npy')])
                 if len(ftraj_files) == 0:
                     raise ValueError(f'No feature trajectories found for {feature}. Check the directory.')
                 new_ftraj_files_ls.append(ftraj_files)
@@ -242,13 +248,11 @@ class TrajData():
         Parameters
         ----------
         keys : str or list
-            The dataset key to get the feature trajectories from. If a list, the feature trajectories of datasets are merged
+            The dataset key to get the feature trajectories from. If a list, the feature trajectories of datasets are concatenated
         dt_out : float
             The output time step of the feature trajectories in ns. Should be a multiple of the shortest time step in the datasets
         internal_names : list
             A list of names in the internal ftrajs dictionary to prepare
-        stride : int
-            The stride to sample the feature trajectories
         time_cutoff : int
             The minimum time length of the feature trajectories to be considered in ns
         convert_dihed_ids : list or None
@@ -277,7 +281,7 @@ class TrajData():
             ftraj_dt = self.datasets[key]['dt']
             stride = int(dt_out / ftraj_dt)
             frame_no_cutoff = int(time_cutoff / ftraj_dt)
-            print(f"Stride for dataset {key} with timestep {self.datasets[key]['dt']}: {stride}")
+            print(f"Stride for dataset {key} with timestep {self.datasets[key]['dt']} ns: {stride}")
             
             f, m = self.prepare_ftrajs(ftraj_dict, stride=stride, frame_no_cutoff=frame_no_cutoff, convert_dihed_ids=convert_dihed_ids)
             m = {k+last_ftraj_no:v+last_rtraj_no for k, v in m.items()}
