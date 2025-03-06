@@ -1,4 +1,3 @@
-from pathlib import Path
 import pandas as pd
 import sys
 sys.path.insert(0, '/home/rzhu/Desktop/projects/kinase_analysis/src/')
@@ -6,22 +5,22 @@ from MSMEstimation import MSMEstimation
 from TrajData import TrajData
 
 
-hps_df = pd.read_csv('../data/abl/msm/markov_priors/hps.csv')
+hps_df = pd.read_csv('hps_example.csv')
 
 # Create TrajData object and load datasets
 traj_data = TrajData(protein='abl')
 traj_data.add_dataset(                                                                                                                                                                              
-    key='abl-pdb-1ns',
-    rtraj_dir='.', 
-    ftraj_dir='/home/rzhu/Desktop/projects/kinase_analysis/data/abl/ftrajs', 
-    dt=1
+    key='abl-pdb-50ps',
+    rtraj_dir='/arc/abl_processed', 
+    ftraj_dir='/home/rzhu/Desktop/projects/kinase_analysis/data/abl/abl-pdb-50ps/ftrajs', 
+    dt=0.05
 )
 
 # Create MSMEstimation object and run studies
 msm_est = MSMEstimation(
     hps_table=hps_df,
     traj_data=traj_data,
-    wk_dir='/home/rzhu/Desktop/projects/kinase_analysis/data/abl/msm/markov_priors'
+    wk_dir='/home/rzhu/Desktop/projects/kinase_analysis/data/abl/msm/with_prior'
 )
 
 msm_est.run_studies(hp_indices=[1,2,3,4])
