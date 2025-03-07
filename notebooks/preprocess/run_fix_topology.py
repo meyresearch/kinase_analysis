@@ -15,18 +15,17 @@ def print(*args, **kwargs):
     original_print(*args, **kwargs)
 builtins.print = print
 
-
 # Directory containing the raw trajectories to be processed
-raw_traj_dir = Path('/arc/ABL1/')
+raw_traj_dir = Path('/arc/met-pdb-seeded-50ps-freq/17650/')
 raw_traj_files = natsorted([traj for traj in raw_traj_dir.glob('run*-clone?.h5')])
 max_run_no = max([int(re.search(r'run([0-9]+)-clone[0-9]+\.h5', f.name).group(1)) for f in raw_traj_files])
 
 # Directory to save the processed trajectories
-processed_traj_directory = Path('/arc/abl_processed')
+processed_traj_directory = Path('/arc/met-pdb-50ps_processed')
 processed_traj_directory.mkdir(exist_ok=True)
 
 # Directory containing the correct topology for each run
-topology_paths = natsorted([pdb for pdb in Path('/arc/abl_equilibrated_strucs').glob('RUN*_solute_equilibrated.pdb')])
+topology_paths = natsorted([pdb for pdb in Path('/arc/met-pdb_equilibrated_strucs').glob('RUN*_solute_equilibrated.pdb')])
 topology_selection = 'chainid 0 and not name CL and not name NA'
 
 
@@ -71,9 +70,13 @@ if __name__ == "__main__":
                 for chunk in md.iterload(traj, top=trajectory_top, atom_indices=atom_indices, chunk=10000):
                     trj_file.write(coordinates=chunk.xyz, cell_lengths=chunk.unitcell_lengths, cell_angles=chunk.unitcell_angles, time=chunk.time)
                 trj_file.close()
+                if os.path.exists(processed_traj_file): 
+                    print(f'Remove raw trajectory {traj}.')
+                    os.remove(traj)
             except Exception as err:
                 print(f"Error processing trajectory {traj.stem}. Skipping...")
                 print("\nError message: \n", err)
                 trj_file.close()
-                if os.path.exists(processed_traj_file): os.remove(processed_traj_file)
+                if os.path.exists(processed_traj_file): 
+                    os.remove(processed_traj_file)
                 continue

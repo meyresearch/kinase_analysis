@@ -6,7 +6,6 @@ from pathlib import Path
 import builtins
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'src')))
 
-from funcs_indices import *
 from funcs_featurise import *
 from funcs_db_assign import *
 
@@ -19,7 +18,7 @@ builtins.print = print
 
 
 if __name__ == "__main__":
-    protein = 'abl'
+    protein = 'met-pdb-50ps'
     traj_dir = Path(f'/arc/{protein}_processed')
     traj_files = natsorted([traj for traj in traj_dir.rglob('run*-clone?.h5')])
     
@@ -32,14 +31,13 @@ if __name__ == "__main__":
     # No need to align to a reference structure as all the features are internal degrees of freedoms
     # ref = md.load('/arc/egfr_equilibrated_strucs/RUN0_solute_equilibrated.pdb')
     
-    featurisers = [inHbonddist_featuriser,
-                   interHbond1dist_featuriser,
-                   interHbond2dist_featuriser,
-                   interpipidist_featuriser,
-                   outpipidist_featuriser,
-                   pathwayangle_featuriser]
+    featurisers = [dbdist_featuriser, dbdihed_featuriser, aloop_featuriser, achelix_featuriser,
+                   inHbonddist_featuriser, interHbond2dist_featuriser, interpipidist_featuriser,
+                   outpipidist_featuriser, pathwayangle_featuriser]
+    
+    print(f'Featurising protein {protein}')
     print(f'Featurisers: {[f.__name__ for f in featurisers]}')
-
+    
     # Loop over runs
     try:
         for i in tqdm(range(max_run_no+1), total=max_run_no+1):

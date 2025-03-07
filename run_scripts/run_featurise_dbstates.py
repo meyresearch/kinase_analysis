@@ -10,7 +10,7 @@ traj_data.add_dataset(
     rtraj_dir='/arc/abl_processed/',
     rtraj_glob='*.h5', 
     ftraj_dir='/home/rzhu/Desktop/projects/kinase_analysis/data/abl/ftrajs', 
-    dt=1
+    dt=0.05
 )
 traj_data.featurize(
     key='abl-pdb-50ps', 
