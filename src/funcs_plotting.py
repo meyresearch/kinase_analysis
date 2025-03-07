@@ -15,7 +15,7 @@ dfg_spatial_colors = np.array([(238, 66, 102),       # Pink-red DFG-in
                                (255, 210, 63),       # Yellow DFG-inter
                                (84, 13, 110),        # Purple DFG-out
                                (89, 89, 89)])/255    # Grey undefined   
-dfg_dihed_colors = 
+# dfg_dihed_colors = 
 
 
 def plot_ev(ev, c_centers, traj_all, traj_weights, title, savedir, dim_1=0, dim_2=1, dim_3=2, \
@@ -200,7 +200,7 @@ def plot_pcca_graph(traj_all, traj_weights,
     return None
 
 
-def plot_ts(timescales, n_ts, markov_lag, savedir):
+def plot_ts(timescales, n_ts, dt, savedir):
     '''
     Plot implied timescales of processes from a Maximum likihood MSM or Bayesian MSM samples. 
     
@@ -210,8 +210,9 @@ def plot_ts(timescales, n_ts, markov_lag, savedir):
         Array of timescales from the MSM samples. If timescales has shape (n_markov_states), plot the single measurement. If timescales has shape (n_markov_states, n_samples), plot the mean and std over n_samples. 
     n_ts : int
         Number of timescales to plot.
-    markov_lag : int
-        The lag time used to construct the MSM in ns.
+    dt : float
+        The time interval of the feature trajectories in nanoseconds. Should be consistent with 
+        dt_out in the study object. 
     savedir : str
         Path to save the plot. If None, the plot will be displayed but not saved.
     '''
@@ -220,18 +221,18 @@ def plot_ts(timescales, n_ts, markov_lag, savedir):
 
     x = np.arange(n_ts)+2
     if timescales.ndim == 1:
-        y = timescales[:n_ts]*markov_lag/1000
+        y = timescales[:n_ts]*dt/1000
         if len(timescales) < n_ts: UserWarning("Not enough timescales to plot.")
         ax.plot(x, y, marker='o', markersize=10)
     elif timescales.ndim == 2:
-        y = timescales.mean(axis=0)[:n_ts]*markov_lag/1000
-        yerr = timescales.std(axis=0)[:n_ts]*markov_lag/1000
+        y = timescales.mean(axis=0)[:n_ts]*dt/1000
+        yerr = timescales.std(axis=0)[:n_ts]*dt/1000
         if timescales.shape[1] < n_ts: UserWarning("Not enough timescales to plot.")
         ax.errorbar(x, y, yerr=yerr, fmt='o', markersize=5, capsize=6, capthick=2, ls='-', ecolor='black')
     else:
         raise ValueError("timescales must have shape (n_markov_states) or (n_markov_states, n_samples)")
     
-    ax.fill_between([0, n_ts+2], y1=markov_lag/1000, y2=0, color='grey', alpha=0.8)
+    ax.fill_between([0, n_ts+2], y1=dt/1000, y2=0, color='grey', alpha=0.8)
 
     ax.set_yscale('log')
     ax.grid(visible=True, axis='y')
@@ -279,25 +280,25 @@ def plot_pcca(state_assignment, c_centers, savedir, dim_1=0, dim_2=1, \
     return None
 
 
-def plot_mfpt_matrix(mfpt, markov_lag, mfpt_err=None, text_f =".2e", savedir=None):
+def plot_mfpt_matrix(mfpt, dt, mfpt_err=None, text_f =".2e", savedir=None):
     """
     Parameters
     ----------
     mfpt : np.ndarray (n_states, n_states)
         Matrix of mean first passage times between states
-    markov_lag : float
-        Markov lag time in nanosecond
+    dt : float
+        The time interval of the feature trajectories in nanoseconds. Should be consistent with 
+        dt_out in the study object. 
     mfpt_err : optional, np.ndarray (n_states, n_states) 
         Matrix of standard error of mean first passage times between states
     text_f : optional, str
         Format of the text in the plot        
     savedir : optional, str
         Path to save the plot
-
     """
     n_states = mfpt.shape[0]
-    mfpt_scaled = mfpt*markov_lag/1000
-    mfpt_err_scaled = mfpt_err*markov_lag/1000 if mfpt_err is not None else None
+    mfpt_scaled = mfpt*dt/1000
+    mfpt_err_scaled = mfpt_err*dt/1000 if mfpt_err is not None else None
     norm = mpl.colors.Normalize(vmin=np.min(mfpt_scaled), vmax=np.max(mfpt_scaled))
 
     fig,ax = plt.subplots(1,figsize=(10,10))

@@ -250,7 +250,7 @@ class TrajData():
         keys : str or list
             The dataset key to get the feature trajectories from. If a list, the feature trajectories of datasets are concatenated
         dt_out : float
-            The output time step of the feature trajectories in ns. Should be a multiple of the shortest time step in the datasets
+            The output time interval of the feature trajectories in ns. Should be a multiple of the shortest time step in the datasets
         internal_names : list
             A list of names in the internal ftrajs dictionary to prepare
         time_cutoff : int
