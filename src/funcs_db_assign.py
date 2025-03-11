@@ -172,11 +172,12 @@ def dunbrack_count(spatial_assignments, dihedral_assignments):
         The dihedral assignments of each snapshot
     '''
     
-    spatial_counts = np.array([np.sum(spatial_assignments == i) for i in range(3)])
+    spatial_counts = np.array([np.sum(spatial_assignments == i) for i in range(-1, 3)])
     in_dihed_counts = [np.sum(dihedral_assignments == i) for i in range(0,6)]
     inter_dihed_counts = [np.sum(dihedral_assignments == i) for i in range(6,7)]
     out_dihed_counts = [np.sum(dihedral_assignments == i) for i in range(7,8)]
-    dihed_counts = [[spatial_counts[0] - np.sum(in_dihed_counts)] + in_dihed_counts, 
-                    [spatial_counts[1] - np.sum(inter_dihed_counts)] + inter_dihed_counts, 
-                    [spatial_counts[2] - np.sum(out_dihed_counts)] + out_dihed_counts] 
+    dihed_counts = [[spatial_counts[0]], 
+                    [spatial_counts[1] - np.sum(in_dihed_counts)] + in_dihed_counts, 
+                    [spatial_counts[2] - np.sum(inter_dihed_counts)] + inter_dihed_counts, 
+                    [spatial_counts[3] - np.sum(out_dihed_counts)] + out_dihed_counts] 
     return spatial_counts, dihed_counts

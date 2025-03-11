@@ -7,16 +7,21 @@ import matplotlib.cm as cm
 import networkx as nx
 from deeptime.plots import plot_implied_timescales, plot_energy2d, plot_contour2d_from_xyz
 from deeptime.util import energy2d
-
 import numpy as np
 
-
-dfg_spatial_colors = np.array([(238, 66, 102),       # Pink-red DFG-in
-                               (255, 210, 63),       # Yellow DFG-inter
-                               (84, 13, 110),        # Purple DFG-out
-                               (89, 89, 89)])/255    # Grey undefined   
-# dfg_dihed_colors = 
-
+dfg_spatial_colors = np.array(['#595959',       # Grey noise
+                               '#53F4A2',       # Green DFG-in
+                               '#F54801',       # Red DFG-inter
+                               '#BA08F4'])      # Purple DFG-out
+dfg_dihed_colors = np.array(['#595959',         # Grey noise
+                             '#A9E67B',
+                             '#00E617',
+                             '#1F6B40',
+                             '#1FBCE6',
+                             '#7088E6',
+                             '#150AE6',         
+                             '#F48263',          # Inter
+                             '#F36BF5'])         # Out
 
 def plot_ev(ev, c_centers, traj_all, traj_weights, title, savedir, dim_1=0, dim_2=1, dim_3=2, \
             ct_cmap='nipy_spectral', ct_a=0.6, ev_cmap='coolwarm', ev_a=0.8, ev_s=20, ev_marker='.', \
@@ -336,26 +341,18 @@ def plot_dihed_pie(spatial_counts, dihed_counts, radius_size=0.5,
                    show_legend=False, show_clusters=True,
                    figsize=(6,6), title='', fontsize=12, savedir=None):
     
-    dihed_cluster_labels = ['noise', 'BLAminus', 'BLAplus', 'ABAminus', 'BLBminus', 'BLBplus', 'BLBtrans', 'noise', 'BABtrans', 'noise', 'BBAminus']
-    spatial_cluster_labels = ['DFG-in', 'DFG-inter', 'DFG-out']
+    spatial_cluster_labels = ['noise', 'DFG-in', 'DFG-inter', 'DFG-out']
+    dihed_cluster_labels = ['noise', 
+                            'noise', 'BLAminus', 'BLAplus', 'ABAminus', 'BLBminus', 'BLBplus', 'BLBtrans', 
+                            'noise', 'BABtrans', 
+                            'noise', 'BBAminus']
     
-    outer_colors = np.array([
-    (128/255, 128/255, 128/255),   # Gray
-    (235/255, 95/255, 70/255),     # Light Red
-    (240/255, 146/255, 58/255),    # Flamebright
-    (255/255, 214/255, 92/255),    # Light yellow
-    (255/255, 188/255, 214/255),   # Light pink
-    (210/255, 180/255, 140/255),   # Tan
-    (196/255, 79/255, 108/255),    # Strawberry
-    (128/255, 128/255, 128/255),   # Gray
-    (25/255, 189/255, 85/255),     # Light Green
-    (128/255, 128/255, 128/255),   # Gray
-    (136/255, 75/255, 204/255)])   # Light Purple
-    inner_colors = np.array([
-    (173/255, 35/255, 10/255),   # Red
-    (28/225, 128/255, 65/255),   # Green
-    (80/255, 29/255, 138/255)])  # Purple
-
+    inner_colors = dfg_spatial_colors
+    outer_colors = [dfg_dihed_colors[0],     # white for undefined spatial group
+                    dfg_dihed_colors[0], *dfg_dihed_colors[1:7],  # DFG-in sub-clusters
+                    dfg_dihed_colors[0], dfg_dihed_colors[7],  # DFG-inter sub-clusters
+                    dfg_dihed_colors[0], dfg_dihed_colors[8]]  # DFG-out sub-clusters
+    
     filtered_spatial_cluster_labels = [label if count/sum(spatial_counts) >= 0.05 else '' for label, count in zip(spatial_cluster_labels, spatial_counts)]
     filtered_dihed_cluster_labels = [label if count/sum(sum(dihed_counts,[])) >= 0.05 else '' for label, count in zip(dihed_cluster_labels, sum(dihed_counts,[]))]
 
