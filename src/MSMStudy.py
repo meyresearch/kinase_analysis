@@ -212,27 +212,39 @@ class MSMStudy():
         num_of_rtrajs_per_ds = {key:len(datasets_study[key]['rtraj_files']) for key in datasets_study.keys()}
         stride_of_rtraj_idx = np.concatenate([np.ones(num)*datasets_study[k]['stride'] for k, num in num_of_rtrajs_per_ds.items()])
 
-        rtraj_samples = []
-        for ftraj_idx, frame_idx in samples:
-            rtraj_idx = self.mapping[ftraj_idx]
-            rframe_idx = frame_idx * stride_of_rtraj_idx[rtraj_idx]
-            rtraj_samples.append([rtraj_idx, rframe_idx])
+        if isinstance(samples, list):
+            rtraj_samples = []
+            for ftraj_idx, frame_idx in samples:
+                rtraj_idx = self.mapping[ftraj_idx]
+                rframe_idx = frame_idx * stride_of_rtraj_idx[rtraj_idx]
+                rtraj_samples.append([rtraj_idx, rframe_idx])
+        elif isinstance(samples, dict):
+            rtraj_samples = {}
+            for ftraj_idx, frame_idx in samples.items():
+                rtraj_idx = self.mapping[ftraj_idx]
+                rframe_idx = [int(idx * stride_of_rtraj_idx[rtraj_idx]) for idx in frame_idx]
+                rtraj_samples[rtraj_idx] = rframe_idx
+        else:
+            raise ValueError('samples should be either a list or a dictionary')
         return rtraj_samples
 
 
-    def save_samples(self, samples, fname, ref=None, save_ids=False):
+    def save_samples(self, samples, fname, ref=None, save_ids=True):
         dataset_keys = [f.strip() for f in self.hp_dict.datasets.lower().split(' ')] # Keys used in this study
         traj_files = np.concatenate([self.traj_data.datasets[key]['rtraj_files'] for key in dataset_keys])
     
         fname = Path(fname)
 
-        rtraj_samples = self._map_to_rtraj_samples(samples, dataset_keys)
-        rtraj_sample_dict = defaultdict(list)
-        for traj_idx, frame_idx in rtraj_samples:
-            rtraj_sample_dict[traj_idx].append(frame_idx)
-        rtraj_sample_dict = {int(k): [int(v) for v in vals] for k, vals in rtraj_sample_dict.items()}
+        traj_sample_dict = defaultdict(list)
+        for traj_idx, frame_idx in samples:
+            traj_sample_dict[traj_idx].append(frame_idx)
+        traj_sample_dict = {int(k): [int(v) for v in vals] for k, vals in traj_sample_dict.items()}
+        rtraj_sample_dict = self._map_to_rtraj_samples(traj_sample_dict, dataset_keys)
+        
         if save_ids:
             with open(fname.with_suffix('.json'), 'w') as f:
+                json.dump(traj_sample_dict, f)
+            with open(fname.with_name(fname.stem + "_raw.json"), 'w') as f:
                 json.dump(rtraj_sample_dict, f)
     
         frames = []

@@ -7,12 +7,30 @@ from funcs_indices import *
 ################## Features from Dunbrack paper ####################
 
 def dbdist_featuriser(traj, protein, save_to_disk=None) -> np.ndarray:
+
+    '''
+    Parameters
+    ----------
+    traj : mdtraj.Trajectory
+        The trajectory object of a simulation
+    protein : str
+        The name of the protein in the topology to get relevant atom indices
+    save_to_disk : str
+        The path to save the feature to disk
+    
+    Returns
+    -------
+    np.ndarray
+        A feature vector
+    '''
+
     ########## Dunbrack DFG distances ############
     # d1 = dist(αC-Glu(+4)-Cα, DFG-Phe-Cζ) 
     # Distance between the Ca of the fourth residue after the conserved Glu (Met) in the C-helix
     # and the outermost atom of the DFG-Phe ring Cζ
     # d2 = dist(β3-Lys-Cα, DFG-Phe-Cζ) 
     ##############################################
+
     indices = get_feature_indices(traj.topology, protein, 'db_dist')
     distances = md.compute_distances(traj, [[indices['aC_M-ca'], indices['dfg_F-cz']], 
                                             [indices['b3_K-ca'], indices['dfg_F-cz']]])

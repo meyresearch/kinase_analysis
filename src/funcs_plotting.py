@@ -10,9 +10,15 @@ from deeptime.util import energy2d
 import numpy as np
 
 dfg_spatial_colors = np.array(['#595959',       # Grey noise
-                               '#53F4A2',       # Green DFG-in
-                               '#F54801',       # Red DFG-inter
-                               '#BA08F4'])      # Purple DFG-out
+                               '#EE4266',        # Red DFG-in
+                               '#FFD23F',        # Yellow DFG-inter
+                               '#540D6E'])       # Purple DFG-out
+
+# dfg_spatial_colors = np.array(['#595959',       # Grey noise
+#                                '#53F4A2',       # Green DFG-in
+#                                '#F54801',       # Red DFG-inter
+#                                '#BA08F4'])      # Purple DFG-out
+
 dfg_dihed_colors = np.array(['#595959',         # Grey noise
                              '#A9E67B',
                              '#00E617',
@@ -337,8 +343,8 @@ def plot_mfpt_matrix(mfpt, dt, mfpt_err=None, text_f =".2e", savedir=None):
     return None
 
 
-def plot_dihed_pie(spatial_counts, dihed_counts, radius_size=0.5, 
-                   show_legend=False, show_clusters=True,
+def plot_dihed_pie(spatial_counts, dihed_counts, 
+                   show_legend=False, show_dihed='all', radius_size=0.5, 
                    figsize=(6,6), title='', fontsize=12, savedir=None):
     
     spatial_cluster_labels = ['noise', 'DFG-in', 'DFG-inter', 'DFG-out']
@@ -358,16 +364,29 @@ def plot_dihed_pie(spatial_counts, dihed_counts, radius_size=0.5,
 
     fig, ax = plt.subplots(figsize=figsize)
  
-    wedges_i, texts_i = ax.pie(spatial_counts, radius=1-radius_size, colors=inner_colors, 
-           wedgeprops=dict(width=radius_size, edgecolor='w'))
-    if show_clusters:
-        wedges_o, texts_o = ax.pie(sum(dihed_counts,[]), radius=1, colors=outer_colors,
-               labels=filtered_dihed_cluster_labels, textprops={'fontsize': fontsize, 'fontweight': 'bold'}, labeldistance=0.7,
-               wedgeprops=dict(width=radius_size, edgecolor='w'))
-    else:
-        wedges_o, texts_o = ax.pie(sum(dihed_counts,[]), radius=1, colors=outer_colors,
-                                wedgeprops=dict(width=radius_size, edgecolor='w'))
 
+    if show_dihed == 'all':
+        wedges_i, texts_i = ax.pie(spatial_counts, radius=1-radius_size, 
+                                colors=inner_colors, 
+                                wedgeprops=dict(width=radius_size, edgecolor='w'))        
+        wedges_o, texts_o = ax.pie(sum(dihed_counts,[]), radius=1, 
+                                   colors=outer_colors,
+                                   labels=filtered_dihed_cluster_labels, 
+                                   textprops={'fontsize': fontsize, 'fontweight': 'bold'}, 
+                                   labeldistance=0.7,
+                                   wedgeprops=dict(width=radius_size, edgecolor='w'))
+    elif show_dihed == 'no_labels':
+        wedges_i, texts_i = ax.pie(spatial_counts, radius=1-radius_size, 
+                        colors=inner_colors, 
+                        wedgeprops=dict(width=radius_size, edgecolor='w'))   
+        wedges_o, texts_o = ax.pie(sum(dihed_counts,[]), radius=1, 
+                                   colors=outer_colors,
+                                   wedgeprops=dict(width=radius_size, edgecolor='w'))
+    else:
+        wedges_i, texts_i = ax.pie(spatial_counts, radius=0.6, 
+                                    colors=inner_colors, 
+                                    wedgeprops=dict(width=radius_size, edgecolor='w'))
+        
     ax.set(aspect="equal")
     ax.text(0, 0, title, ha='center', va='center', fontsize=16, fontweight='bold')
 
