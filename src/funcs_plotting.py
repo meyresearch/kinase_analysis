@@ -9,7 +9,7 @@ from deeptime.plots import plot_implied_timescales, plot_energy2d, plot_contour2
 from deeptime.util import energy2d
 import numpy as np
 
-dfg_spatial_colors = np.array(['#595959',       # Grey noise
+dfg_spatial_colors = np.array(['#595959',        # Grey noise
                                '#EE4266',        # Red DFG-in
                                '#FFD23F',        # Yellow DFG-inter
                                '#540D6E'])       # Purple DFG-out

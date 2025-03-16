@@ -174,3 +174,43 @@ def alooprmsd_featuriser(traj, protein, reference, save_to_disk=None) -> np.ndar
     rmsd = md.rmsd(traj, reference, atom_indices=traj.topology.select(f'resid {indices["aloop_start"]} to {indices["aloop_end"]}'))
     if save_to_disk is not None: np.save(save_to_disk, rmsd)
     return rmsd 
+
+
+## The writhe featurizer 
+
+import wiggle.writhe as wr
+
+def get_sigma_tensor(coords):
+    # get the shape of the tensor - every 4th CA step
+    tmp = wr.find_Sigma_array(coords[0][::4])
+    # initialise array
+    sigma_tensor = np.zeros((coords.shape[0], tmp.shape[0], tmp.shape[0]))
+    for i in range(coords.shape[0]):
+        sigma_tensor[i] = wr.find_Sigma_array(coords[i][::4])
+    return sigma_tensor
+
+def writhe_featuriser(traj, protein, flatten=True, save_to_disk=None) -> np.ndarray:
+    '''
+    Parameters
+    ----------
+    traj : mdtraj.Trajectory
+        The trajectory object of a simulation
+    protein : str
+        The name of the protein in the topology to get relevant atom indices
+    save_to_disk : str
+        The path to save the feature to disk
+    Returns
+    -------
+    np.ndarray
+        A feature vector - tensor of shape (n_frames, 26, 26)
+    '''
+
+    ca_indices = traj.topology.select('name CA')
+    ca_coords = traj.xyz[:, ca_indices] # im assuming this loads a (number_frames, number_residues, 3) array
+    sigma_tensor = get_sigma_tensor(ca_coords)
+    if flatten:
+        sigma_tensor = sigma_tensor.reshape(sigma_tensor.shape[0], -1)
+    if save_to_disk is not None:
+        np.save(save_to_disk, sigma_tensor)
+    return sigma_tensor
+
