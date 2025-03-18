@@ -345,6 +345,8 @@ def plot_mfpt_matrix(mfpt, dt, mfpt_err=None, text_f =".2e", savedir=None):
 
 def plot_dihed_pie(spatial_counts, dihed_counts, 
                    show_legend=False, show_dihed='all', radius_size=0.5, 
+                   dfg_spatial_colors = dfg_spatial_colors,
+                   dfg_dihed_colors = dfg_dihed_colors,
                    figsize=(6,6), title='', fontsize=12, savedir=None):
     
     spatial_cluster_labels = ['noise', 'DFG-in', 'DFG-inter', 'DFG-out']

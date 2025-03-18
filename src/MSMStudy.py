@@ -199,7 +199,7 @@ class MSMStudy():
 
 
     def sample_from_microstate(self, microstate_id, n_sample):
-        weights = np.zeros(self.msm_mod.connected_states.shape[0])
+        weights = np.zeros(self.connected_states.shape[0])
         weights[microstate_id] = 1
         state_samples_count = self._get_state_count_from_distrib(weights, self.connected_states, n_sample)
         samples = self._get_samples_from_state(state_samples_count)

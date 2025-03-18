@@ -207,7 +207,9 @@ def writhe_featuriser(traj, protein, flatten=True, save_to_disk=None) -> np.ndar
 
     ca_indices = traj.topology.select('name CA')
     ca_coords = traj.xyz[:, ca_indices] # im assuming this loads a (number_frames, number_residues, 3) array
-    sigma_tensor = get_sigma_tensor(ca_coords)
+    ca_coords_float64 = ca_coords.astype(np.float64)
+    
+    sigma_tensor = get_sigma_tensor(ca_coords_float64)
     if flatten:
         sigma_tensor = sigma_tensor.reshape(sigma_tensor.shape[0], -1)
     if save_to_disk is not None:
