@@ -1,0 +1,17 @@
+hp_id,datasets,features,dt_out,time_cutoff,tica_lag_time,tica_stride,tica_dim,tica_kinetic_map,cluster_n,cluster_stride,cluster_max_iter,seed,markov_lag_time,markov_count_mode,markov_count_prior,msm_mode
+1,abl-pdb-50ps,dbdist dbdihed achelix aloop,0.05,100,1,1000,20,TRUE,1000,1000,1000,42,1,effective,True,bayesian
+2,abl-pdb-50ps,dbdist dbdihed achelix aloop,0.05,100,1,1000,20,TRUE,1000,1000,1000,42,11,effective,True,bayesian
+3,abl-pdb-50ps,dbdist dbdihed achelix aloop,0.05,100,1,1000,20,TRUE,1000,1000,1000,42,21,effective,True,bayesian
+4,abl-pdb-50ps,dbdist dbdihed achelix aloop,0.05,100,1,1000,20,TRUE,1000,1000,1000,42,31,effective,True,bayesian
+5,abl-pdb-50ps,dbdist dbdihed achelix aloop,0.05,100,1,1000,20,TRUE,1000,1000,1000,42,41,effective,True,bayesian
+6,abl-pdb-50ps,dbdist dbdihed achelix aloop,0.05,100,1,1000,20,TRUE,1000,1000,1000,42,51,effective,True,bayesian
+7,abl-pdb-50ps,dbdist dbdihed achelix aloop,0.05,100,1,1000,20,TRUE,1000,1000,1000,42,61,effective,True,bayesian
+8,abl-pdb-50ps,dbdist dbdihed achelix aloop,0.05,100,1,1000,20,TRUE,1000,1000,1000,42,71,effective,True,bayesian
+9,abl-pdb-50ps,dbdist dbdihed achelix aloop,0.05,100,1,1000,20,TRUE,1000,1000,1000,42,81,effective,True,bayesian
+10,abl-pdb-50ps,dbdist dbdihed achelix aloop,0.05,100,1,1000,20,TRUE,1000,1000,1000,42,91,effective,True,bayesian
+11,abl-pdb-50ps,dbdist dbdihed achelix aloop,0.05,100,1,1000,20,TRUE,1000,1000,1000,42,101,effective,True,bayesian
+12,abl-pdb-50ps,dbdist dbdihed achelix aloop,0.05,100,1,1000,20,TRUE,1000,1000,1000,42,111,effective,True,bayesian
+13,abl-pdb-50ps,dbdist dbdihed achelix aloop,0.05,100,1,1000,20,TRUE,1000,1000,1000,42,121,effective,True,bayesian
+14,abl-pdb-50ps,dbdist dbdihed achelix aloop,0.05,100,1,1000,20,TRUE,1000,1000,1000,42,131,effective,True,bayesian
+15,abl-pdb-50ps,dbdist dbdihed achelix aloop,0.05,100,1,1000,20,TRUE,1000,1000,1000,42,141,effective,True,bayesian
+16,abl-pdb-50ps,dbdist dbdihed achelix aloop,0.05,100,1,1000,20,TRUE,1000,1000,1000,42,151,effective,True,bayesian
