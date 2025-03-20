@@ -10,9 +10,9 @@ from deeptime.util import energy2d
 import numpy as np
 
 dfg_spatial_colors = np.array(['#595959',        # Grey noise
-                               '#EE4266',        # Red DFG-in
-                               '#FFD23F',        # Yellow DFG-inter
-                               '#540D6E'])       # Purple DFG-out
+                               '#540D6E',        # Purple DFG-in
+                               '#EE4266',        # Red DFG-inter
+                               '#FFD23F'])       # Yellow DFG-out
 
 # dfg_spatial_colors = np.array(['#595959',       # Grey noise
 #                                '#53F4A2',       # Green DFG-in
