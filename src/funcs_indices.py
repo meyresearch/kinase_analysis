@@ -151,6 +151,7 @@ def get_feature_indices(top, protein, feature):
             indices['dfg_D-cg'] = find_atomid(top, 'ASP855-CG')
             indices['(D-3)_K-O'] = find_atomid(top, 'LYS852-O')
     elif 'met' in protein :
+        index_offset = 0 # default to neither but define variable for clarity
         if 'met-af2' in protein:
             index_offset = 1067
         elif 'met-pdb' in protein:

@@ -16,6 +16,8 @@ traj_data.featurize(
     key='abl-pdb-50ps', 
     featurisers=[dfg_featuriser],
     top=None,
-    confidence_threshold=0.01, dihed_centroids=None, dihed_cutoff=1,
-    sptial_name='hdbscan_dist_group', dihed_name='hdbscan_dihed_group'
+    confidence_threshold=0.01, dihed_cutoff=1,
+    spatial_model = '/home/rzhu/Desktop/projects/kinase_analysis/data/abl/clustering/hdbscan.pkl',
+    dihed_centroids = '/home/rzhu/Desktop/projects/kinase_analysis/data/abl/clustering/dfg_dihed_centroids.npy',
+    spatial='hdbscan_dist_group', dihed_name='hdbscan_dihed_group',
 )
