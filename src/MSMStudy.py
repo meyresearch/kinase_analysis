@@ -161,6 +161,18 @@ class MSMStudy():
 
 
     def _get_samples_from_state(self, state_samples_count):
+        """
+        Get samples from the states according to the number of samples to be taken
+        Parameters
+        ----------
+        state_samples_count: dict[int, int]
+            The states to sampled from : the number of samples to be taken
+        Returns
+        -------
+        samples: list[tuple[int, int]]
+            The samples to be taken. The samples are tuples of (ftraj_idx, frame_idx)
+        """
+
         index_states = compute_index_states(self.dtrajs)
         samples = []
         for state_to_sample_from, n_samples in state_samples_count.items():
@@ -171,6 +183,20 @@ class MSMStudy():
     
 
     def sample_from_distrib(self, distrib):
+        """
+        Sample from the distribution using the connected states
+
+        Parameters
+        ----------
+        distrib: ndarray( (n) )
+            A distribution over microstates to sample from
+
+        Returns
+        -------
+        samples: list[tuple[int, int]]
+            The samples to be taken. The samples are tuples of (ftraj_idx, frame_idx)
+        """
+
         state_samples_count = self._get_state_count_from_distrib(distrib, self.connected_states, len(distrib))
         samples = self._get_samples_from_state(state_samples_count)
 
@@ -178,6 +204,26 @@ class MSMStudy():
     
 
     def sample_from_macrostate(self, n_sample, macrostate_id, ci_cutoff, weights='equilibrium'):
+        """
+        Sample from a macrostate using the PCCA+ assignments
+
+        Parameters
+        ----------
+        n_sample: int
+            The number of samples to be taken
+        macrostate_id: int
+            The id of the macrostate to be sampled from
+        ci_cutoff: float
+            The cutoff for the PCCA+ membership probabilities to be considered in the sampling
+        weights: str
+            The weights to be used for the sampling. Can be 'stationary' or 'uniform'
+
+        Returns
+        -------
+        samples: list[tuple[int, int]]
+            The samples to be taken. The samples are tuples of (ftraj_idx, frame_idx)
+        """
+
         ci = self.pcca_mod.memberships[:, macrostate_id]
         states_to_sample = ci > ci_cutoff
 
@@ -199,6 +245,22 @@ class MSMStudy():
 
 
     def sample_from_microstate(self, microstate_id, n_sample):
+        """
+        Sample from a microstate using the PCCA+ assignments
+
+        Parameters
+        ----------
+        microstate_id: int
+            The id of the microstate to be sampled from
+        n_sample: int
+            The number of samples to be taken
+            
+        Returns
+        -------
+        samples: list[tuple[int, int]]
+            The samples to be taken. The samples are tuples of (ftraj_idx, frame_idx)
+        """
+
         weights = np.zeros(self.connected_states.shape[0])
         weights[microstate_id] = 1
         state_samples_count = self._get_state_count_from_distrib(weights, self.connected_states, n_sample)
@@ -208,6 +270,21 @@ class MSMStudy():
         
 
     def _map_to_rtraj_samples(self, samples, dataset_keys):
+        """
+        Map the sample indices from the filtered featurized trajectories to the indices of raw trajectories
+
+        Parameters
+        ----------
+        samples: list[tuple[int, int]] or dict[int, list[int]]
+            The samples to be mapped. The samples are tuples of (ftraj_idx, frame_idx) or dict[ftraj_idx, list[frame_idx]]
+        dataset_keys: list[str]
+            The keys of the datasets used in this study
+        Returns
+        -------
+        rtraj_samples: list[tuple[int, int]] or dict[int, list[int]]
+            The mapped samples. The samples are tuples of (rtraj_idx, rframe_idx)
+        """
+
         datasets_study = {key: self.traj_data.datasets[key] for key in dataset_keys} # Datasets used in this study 
         num_of_rtrajs_per_ds = {key:len(datasets_study[key]['rtraj_files']) for key in datasets_study.keys()}
         stride_of_rtraj_idx = np.concatenate([np.ones(num)*datasets_study[k]['stride'] for k, num in num_of_rtrajs_per_ds.items()])
@@ -230,6 +307,21 @@ class MSMStudy():
 
 
     def save_samples(self, samples, fname, ref=None, save_ids=True):
+        """
+        Extract the sampled frames from the raw trajectories using sample indices and save them to a file with MDAnalysis
+
+        Parameters
+        ----------
+        samples: list[tuple[int, int]]
+            The samples to be saved. The samples are tuples of (ftraj_idx, frame_idx)
+        fname: str or Path
+            The name of the file to save the samples to
+        ref: mdtraj.Trajectory, optional
+            The reference trajectory to superpose the sampled frames to. The default is None.
+        save_ids: bool, optional
+            Whether to save the sampled indices to a json file. The default is True.
+        """
+
         dataset_keys = [f.strip() for f in self.hp_dict.datasets.lower().split(' ')] # Keys used in this study
         traj_files = np.concatenate([self.traj_data.datasets[key]['rtraj_files'] for key in dataset_keys])
     
