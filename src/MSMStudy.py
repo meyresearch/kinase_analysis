@@ -140,7 +140,7 @@ class MSMStudy():
 
         Parameters
         ----------
-        microstate_distribution: ndarray( (n) )
+        microstate_weights: ndarray( (n) )
             A distribution over microstates to sample from
         n_samples: int
             The number of samples to be taken
@@ -182,12 +182,14 @@ class MSMStudy():
         return samples
     
 
-    def sample_from_distrib(self, distrib):
+    def sample_from_distrib(self, n_sample, distrib):
         """
         Sample from the distribution using the connected states
 
         Parameters
         ----------
+        n_sample: int
+            The number of samples to be taken
         distrib: ndarray( (n) )
             A distribution over microstates to sample from
 
@@ -197,7 +199,7 @@ class MSMStudy():
             The samples to be taken. The samples are tuples of (ftraj_idx, frame_idx)
         """
 
-        state_samples_count = self._get_state_count_from_distrib(distrib, self.connected_states, len(distrib))
+        state_samples_count = self._get_state_count_from_distrib(distrib, self.connected_states, n_sample)
         samples = self._get_samples_from_state(state_samples_count)
 
         return samples
@@ -244,7 +246,7 @@ class MSMStudy():
         return samples
 
 
-    def sample_from_microstate(self, microstate_id, n_sample):
+    def sample_from_microstate(self, n_sample, microstate_id):
         """
         Sample from a microstate using the PCCA+ assignments
 
