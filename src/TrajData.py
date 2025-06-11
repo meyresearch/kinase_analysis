@@ -85,6 +85,8 @@ class TrajData():
             Some featuring functions may require additional arguments
         '''
 
+        # I may want to implement multiprocessing for featurization
+        
         try:
             save_dir = self.datasets[key]['ftraj_dir']
             traj_files = self.datasets[key]['rtraj_files']
@@ -173,6 +175,8 @@ class TrajData():
                 ftraj_files = natsorted([str(ftraj) for ftraj in (save_dir/name).glob(f'*_{feature}.npy')])
                 if len(ftraj_files) == 0:
                     raise ValueError(f'No feature trajectories found for {feature}. Check the directory.')
+                if len(ftraj_files) != len(self.datasets[key]['rtraj_files']):
+                    raise ValueError(f'Number of feature trajectories ({len(ftraj_files)}) does not match the number of raw trajectories ({len(self.datasets[key]["rtraj_files"])}). No of ftrajs not matching no of rtrajs. Have all raw trajectories been featurised?')
                 new_ftraj_files_ls.append(ftraj_files)
                 new_feature_ls.append(feature)
                 new_name_ls.append(name)

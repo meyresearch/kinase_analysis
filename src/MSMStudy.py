@@ -218,7 +218,7 @@ class MSMStudy():
         ci_cutoff: float
             The cutoff for the PCCA+ membership probabilities to be considered in the sampling
         weights: str
-            The weights to be used for the sampling. Can be 'stationary' or 'uniform'
+            The weights to be used for the sampling. Can be 'equilibrium' or 'uniform'
 
         Returns
         -------
