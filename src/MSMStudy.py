@@ -182,6 +182,31 @@ class MSMStudy():
         return samples
     
 
+    def _get_all_frames_from_state(self, microstate_id):
+        """
+        Get all frames from a specific microstate
+        
+        Parameters
+        ----------
+        microstate_id: int
+            The id of the microstate to get all frames from
+            
+        Returns
+        -------
+        samples: list[tuple[int, int]]
+            All samples from the microstate. The samples are tuples of (ftraj_idx, frame_idx)
+        """
+        
+        index_states = compute_index_states(self.dtrajs)
+        try:
+            # Return all frames from this microstate
+            samples = np.array(index_states[microstate_id])
+        except KeyError:
+            raise ValueError(f'Microstate {microstate_id} not found in the trajectory data')
+        
+        return samples
+
+
     def sample_from_distrib(self, n_sample, distrib):
         """
         Sample from the distribution using the connected states
@@ -246,7 +271,7 @@ class MSMStudy():
         return samples
 
 
-    def sample_from_microstate(self, n_sample, microstate_id):
+    def sample_from_microstate(self, microstate_id, n_sample=None):
         """
         Sample from a microstate using the PCCA+ assignments
 
@@ -254,8 +279,8 @@ class MSMStudy():
         ----------
         microstate_id: int
             The id of the microstate to be sampled from
-        n_sample: int
-            The number of samples to be taken
+        n_sample: int, optional
+            The number of samples to be taken. If None, returns all frames in the microstate.
             
         Returns
         -------
@@ -263,10 +288,18 @@ class MSMStudy():
             The samples to be taken. The samples are tuples of (ftraj_idx, frame_idx)
         """
 
-        weights = np.zeros(self.connected_states.shape[0])
-        weights[microstate_id] = 1
-        state_samples_count = self._get_state_count_from_distrib(weights, self.connected_states, n_sample)
-        samples = self._get_samples_from_state(state_samples_count)
+        if n_sample is None:
+            # Return all frames from this microstate
+            samples = self._get_all_frames_from_state(microstate_id)
+        else:
+            # Use existing sampling logic
+            weights = np.zeros(self.connected_states.shape[0])
+            microstate_idx = np.where(self.connected_states == microstate_id)[0]
+            if len(microstate_idx) == 0:
+                raise ValueError(f'Microstate {microstate_id} not found in connected states')
+            weights[microstate_idx[0]] = 1
+            state_samples_count = self._get_state_count_from_distrib(weights, self.connected_states, n_sample)
+            samples = self._get_samples_from_state(state_samples_count)
         
         return samples
         
@@ -308,7 +341,7 @@ class MSMStudy():
         return rtraj_samples
 
 
-    def save_samples(self, samples, fname, ref=None, save_ids=True):
+    def save_samples(self, samples, fname, ref=None, save_ids=True, concat=True):
         """
         Extract the sampled frames from the raw trajectories using sample indices and save them to a file with MDAnalysis
 
@@ -317,11 +350,14 @@ class MSMStudy():
         samples: list[tuple[int, int]]
             The samples to be saved. The samples are tuples of (ftraj_idx, frame_idx)
         fname: str or Path
-            The name of the file to save the samples to
+            The name of the file to save the samples to (if concat=True) or directory path (if concat=False)
         ref: mdtraj.Trajectory, optional
             The reference trajectory to superpose the sampled frames to. The default is None.
         save_ids: bool, optional
             Whether to save the sampled indices to a json file. The default is True.
+        concat: bool, optional
+            Whether to concatenate all samples into one file (True) or save as separate numbered files (False). 
+            If False, fname should be a directory path. The default is True.
         """
 
         dataset_keys = [f.strip() for f in self.hp_dict.datasets.lower().split(' ')] # Keys used in this study
@@ -336,33 +372,62 @@ class MSMStudy():
         rtraj_sample_dict = self._map_to_rtraj_samples(traj_sample_dict, dataset_keys)
         
         if save_ids:
-            with open(fname.with_suffix('.json'), 'w') as f:
-                json.dump(traj_sample_dict, f)
-            with open(fname.with_name(fname.stem + "_raw.json"), 'w') as f:
-                json.dump(rtraj_sample_dict, f)
-    
-        frames = []
-        for traj_id, frame_idx in rtraj_sample_dict.items():
-            sample_traj = md.load(traj_files[traj_id])
-            sample_frames = sample_traj[frame_idx].atom_slice(sample_traj.top.select('mass>1.1'))
-            frames.append(sample_frames)
-        if len(frames)>1:
-            sampled_frames = md.join(frames)
-        else:
-            sampled_frames = frames[0]
+            if concat:
+                with open(fname.with_suffix('.json'), 'w') as f:
+                    json.dump(traj_sample_dict, f)
+                with open(fname.with_name(fname.stem + "_raw.json"), 'w') as f:
+                    json.dump(rtraj_sample_dict, f)
+            else:
+                # Create directory if it doesn't exist
+                fname.mkdir(parents=True, exist_ok=True)
+                with open(fname / 'all_samples.json', 'w') as f:
+                    json.dump(traj_sample_dict, f)
+                with open(fname / 'all_samples_raw.json', 'w') as f:
+                    json.dump(rtraj_sample_dict, f)
 
-        if ref is not None:
-            try:
-                sampled_frames = sampled_frames.superpose(ref, atom_indices=sampled_frames.top.select('name CA'))
-            except:
-                print('Wrong reference. Saving unsuperposed frames.')
+        if concat:
+            frames = []
+            for traj_id, frame_idx in rtraj_sample_dict.items():
+                sample_traj = md.load(traj_files[traj_id])
+                sample_frames = sample_traj[frame_idx].atom_slice(sample_traj.top.select('mass>1.1'))
+                frames.append(sample_frames)
         
-        if isinstance(fname, Path):
-            fname = fname.as_posix()
-        sampled_frames.save(fname)
-        print(f'Saved samples to {fname}')
-    
+            if len(frames)>1:
+                sampled_frames = md.join(frames)
+            else:
+                sampled_frames = frames[0]
 
+            if ref is not None:
+                try:
+                    sampled_frames = sampled_frames.superpose(ref, atom_indices=sampled_frames.top.select('name CA'))
+                except:
+                    print('Wrong reference. Saving unsuperposed frames.')
+            
+            if isinstance(fname, Path):
+                fname_str = fname.as_posix()
+            else:
+                fname_str = fname
+            sampled_frames.save(fname_str)
+            print(f'Saved concatenated samples to {fname_str}')
+        
+        else:
+            # Save each frame as a separate file
+            frame_count = 0
+            fname.mkdir(parents=True, exist_ok=True)
+            for traj_id, frame_idx in rtraj_sample_dict.items():
+                print(f'Sampling trajectory {traj_files[traj_id]}')
+                sample_traj = md.load(traj_files[traj_id])
+                sample_frames = sample_traj[frame_idx].atom_slice(sample_traj.top.select('mass>1.1'))
+                if ref is not None:
+                    try:
+                        sample_frames = sample_frames.superpose(ref, atom_indices=sample_frames.top.select('name CA'))
+                    except:
+                        print('Wrong reference. Saving unsuperposed frame.')
+                sample_file = fname / f'frames_{frame_count:04d}.pdb'
+                sample_frames.save(sample_file.as_posix())
+                frame_count += 1
+                    
+    
     @property
     def hp_id(self):
         return self._hp_id
