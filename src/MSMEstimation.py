@@ -1,19 +1,18 @@
 from pathlib import Path
-from tqdm import tqdm
-import pandas as pd
-from addict import Dict as Adict
-import pickle
-import numpy as np
+from time import time
 import json
 import os
 
+import numpy as np
+import pandas as pd
+import pickle
 import pyemma as pm
-#from deeptime.markov import TransitionCountEstimator
+from addict import Dict as Adict
+from tqdm import tqdm
+
 from funcs_count import PriorTransitionCountEstimator
-from deeptime.markov.msm import MaximumLikelihoodMSM
-from deeptime.markov.msm import BayesianMSM
+from deeptime.markov.msm import BayesianMSM, MaximumLikelihoodMSM
 from deeptime.markov.tools import estimation
-from time import time
 
 
 class MSMEstimation():
@@ -33,11 +32,56 @@ class MSMEstimation():
             The directory to save the MSMs and the estimated hyperparameters
         '''
 
-        self._protein = traj_data.protein
         self.wk_dir = Path(wk_dir)
-        if not self.wk_dir.exists(): self.wk_dir.mkdir(parents=True, exist_ok=True)
+        self.wk_dir.mkdir(parents=True, exist_ok=True)
+        self.observation_path = self.wk_dir / 'observation.csv'
         self.hps_table = hps_table
         self.traj_data = traj_data
+
+
+    def _prepare_save_dirs(self, hp_id):
+        save_dir = self.wk_dir / f'{hp_id}'
+        model_dir = save_dir / 'models'
+        ttraj_dir = save_dir / 'ttrajs'
+        dtraj_dir = save_dir / 'dtrajs'
+
+        for directory in (save_dir, model_dir, ttraj_dir, dtraj_dir):
+            directory.mkdir(parents=True, exist_ok=True)
+
+        return save_dir, model_dir, ttraj_dir, dtraj_dir
+
+
+    @staticmethod
+    def _write_params(save_dir, hp_dict):
+        with open(save_dir / 'params.json', 'w') as f:
+            json.dump(dict(hp_dict), f, indent=4)
+
+
+    def _study_exists(self, hp_dict, model_dir):
+        if not self.observation_path.exists():
+            return False
+
+        try:
+            observation = pd.read_csv(self.observation_path, usecols=['hp_id'])
+        except ValueError:
+            observation = pd.read_csv(self.observation_path)
+
+        if 'hp_id' not in observation.columns:
+            return False
+
+        if hp_dict.hp_id not in observation['hp_id'].values:
+            return False
+
+        required = [
+            model_dir / 'mapping.json',
+            model_dir / 'tica_model.pkl',
+            model_dir / 'kmeans_model.pkl',
+            model_dir / 'count_model.pkl',
+        ]
+        msm_file = model_dir / ('maximum_likelihood_msm_model.pkl' if hp_dict.msm_mode == 'maximum_likelihood' else 'bayesian_msm_model.pkl')
+        required.append(msm_file)
+
+        return all(path.exists() for path in required)
 
 
     def run_studies(self, hp_indices):
@@ -53,43 +97,18 @@ class MSMEstimation():
 
         hptable_to_run = self.hps_table.loc[self.hps_table['hp_id'].isin(hp_indices)]
         print('No of hp trials: ', len(hp_indices))
-        for i, row in tqdm(hptable_to_run.iterrows(), total=len(hp_indices)):
+        for _, row in tqdm(hptable_to_run.iterrows(), total=len(hp_indices)):
             hp_dict = Adict(row.to_dict())
-            save_dir = self.wk_dir/f'{hp_dict.hp_id}'
-            if not save_dir.exists(): save_dir.mkdir(parents=True, exist_ok=True)
+            save_dir, model_dir, ttraj_dir, dtraj_dir = self._prepare_save_dirs(hp_dict.hp_id)
 
-            with open(save_dir/'params.json', 'w') as f:
-                json.dump(hp_dict, f, indent=4)
-
-            model_dir = save_dir/'models'
-            ttraj_dir = save_dir/'ttrajs'
-            dtraj_dir = save_dir/'dtrajs'
-
-            if not model_dir.exists(): model_dir.mkdir(parents=True, exist_ok=True)
-            if not ttraj_dir.exists(): ttraj_dir.mkdir(parents=True, exist_ok=True)
-            if not dtraj_dir.exists(): dtraj_dir.mkdir(parents=True, exist_ok=True)
-            
-            # Check if the models and observations already exist
-            skip_this_study = False
-            tica_f = model_dir/f'tica_model.pkl'
-            kmeans_f = model_dir/f'kmeans_model.pkl'
-            count_f = model_dir/f'count_model.pkl'
-            msm_f = model_dir/f'maximum_likelihood_msm_model.pkl' if hp_dict.msm_mode == 'maximum_likelihood' else model_dir/f'bayesian_msm_model.pkl'
-            
-            observation_f = self.wk_dir/'observation.csv'
-            if observation_f.exists():
-                observation = pd.read_csv(observation_f)
-                if hp_dict.hp_id in observation['hp_id'].values:
-                    skip_this_study = tica_f.exists() and kmeans_f.exists() and count_f.exists() and msm_f.exists()
-            
-            if skip_this_study:
+            if self._study_exists(hp_dict, model_dir):
                 print(f'Study {hp_dict.hp_id} already exists. Skipping ...')
                 continue
-            else:
-                print('Processing trial:\n', hp_dict)
-                ftrajs, _ = self.get_ftrajs(hp_dict, model_dir)
-                self.estimate_msm(ftrajs, hp_dict,self.wk_dir, model_dir, ttraj_dir, dtraj_dir)
-                del ftrajs
+
+            print('Processing trial:\n', hp_dict)
+            self._write_params(save_dir, hp_dict)
+            ftrajs, _ = self.get_ftrajs(hp_dict, model_dir)
+            self.estimate_msm(ftrajs, hp_dict, self.wk_dir, model_dir, ttraj_dir, dtraj_dir)
 
 
     def get_ftrajs(self, hp_dict, model_dir):

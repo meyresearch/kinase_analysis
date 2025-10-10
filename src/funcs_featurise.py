@@ -216,3 +216,30 @@ def writhe_featuriser(traj, protein, flatten=True, save_to_disk=None) -> np.ndar
         np.save(save_to_disk, sigma_tensor)
     return sigma_tensor
 
+
+## R_gyration featurizer
+
+def rg_featuriser(traj, protein, save_to_disk=None) -> np.ndarray:
+    '''
+    Calculate radius of gyration for the protein
+    
+    Parameters
+    ----------
+    traj : mdtraj.Trajectory
+        The trajectory object of a simulation
+    protein : str
+        The name of the protein in the topology to get relevant atom indices
+    save_to_disk : str
+        The path to save the feature to disk
+    
+    Returns
+    -------
+    np.ndarray
+        A feature vector containing radius of gyration for each frame
+    '''
+
+    rg = md.compute_rg(traj)
+    
+    if save_to_disk is not None: 
+        np.save(save_to_disk, rg)
+    return rg

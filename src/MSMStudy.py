@@ -1,5 +1,4 @@
 from deeptime.markov.sample import compute_index_states
-import deeptime as dt
 import mdtraj as md 
 
 import json
@@ -39,6 +38,20 @@ class MSMStudy():
         self._pcca_n = None
 
 
+    @staticmethod
+    def _load_numpy_series(directory):
+        files = natsorted(Path(directory).glob('*.npy'))
+        arrays = [np.load(f) for f in files]
+        stacked = np.concatenate(arrays, axis=0) if arrays else np.empty((0,))
+        return arrays, stacked
+
+
+    @staticmethod
+    def _read_pickle(path):
+        with open(path, 'rb') as handle:
+            return pickle.load(handle)
+
+
     def set_hp_id(self, hp_id):
         '''
         Select the model index to load
@@ -54,11 +67,11 @@ class MSMStudy():
         self.sample_dir.mkdir(exist_ok=True)     
         self.hp_dict = Adict(self.hps_table.loc[self.hps_table['hp_id'] == hp_id].squeeze().to_dict())
 
-        for key in self.traj_data.datasets.keys():
-            ftraj_dt = self.traj_data.datasets[key]['dt']
-            dt_out = self.hp_dict['dt_out']
-            self.traj_data.datasets[key]['stride'] = int(dt_out/ftraj_dt)
-            print(f'Set dataset {key} stride to {self.traj_data.datasets[key]["stride"]}')
+        dt_out = self.hp_dict['dt_out']
+        for key, dataset in self.traj_data.datasets.items():
+            stride = max(1, int(round(dt_out / dataset['dt'])))
+            dataset['stride'] = stride
+            print(f'Set dataset {key} stride to {stride}')
 
         print(f'Loading MSM model id {hp_id} from {self.save_dir}')
         print(f'{self.hp_dict}')
@@ -69,37 +82,31 @@ class MSMStudy():
     def load_all(self):
 
         print('Loading trajectories...')
-        ttraj_dir = self.save_dir/'ttrajs'
-        ttraj_files = natsorted(list(ttraj_dir.glob('*.npy')))
-        self.ttrajs = [np.load(f) for f in ttraj_files]
-        self.ttraj_cat = np.concatenate(self.ttrajs, axis=0)
-
-        dtraj_dir = self.save_dir/'dtrajs'
-        dtraj_files = natsorted(list(dtraj_dir.glob('*.npy')))
-        self.dtrajs = [np.load(f) for f in dtraj_files]
-        self.dtraj_cat = np.concatenate(self.dtrajs, axis=0)   
+        self.ttrajs, self.ttraj_cat = self._load_numpy_series(self.save_dir / 'ttrajs')
+        self.dtrajs, self.dtraj_cat = self._load_numpy_series(self.save_dir / 'dtrajs')
 
         print('Loading models...')
-        model_dir = self.save_dir/'models'
-        with open(model_dir/'mapping.json', 'rb') as f:
-            self.mapping = {int(k):int(v) for k,v in json.load(f).items()}
-        with open(model_dir/'tica_model.pkl', 'rb') as f:
-            self.tica_mod = pickle.load(f)
-        with open(model_dir/'kmeans_model.pkl', 'rb') as f:
-            self.kmeans_mod = pickle.load(f)
+        model_dir = self.save_dir / 'models'
+        with open(model_dir / 'mapping.json', 'rb') as f:
+            self.mapping = {int(k): int(v) for k, v in json.load(f).items()}
+
+        self.tica_mod = self._read_pickle(model_dir / 'tica_model.pkl')
+        self.kmeans_mod = self._read_pickle(model_dir / 'kmeans_model.pkl')
         self.kmeans_centers = self.kmeans_mod.clustercenters
-        with open(model_dir/'count_model.pkl', 'rb') as f:
-            self.count_mod = pickle.load(f)
+        self.count_mod = self._read_pickle(model_dir / 'count_model.pkl')
+
         if self.hp_dict.msm_mode == 'maximum_likelihood':
-            with open(model_dir/'maximum_likelihood_msm_model.pkl', 'rb') as f:
-                self.msm_mod = pickle.load(f)
+            self.msm_mod = self._read_pickle(model_dir / 'maximum_likelihood_msm_model.pkl')
         elif self.hp_dict.msm_mode == 'bayesian':
-            with open(model_dir/'bayesian_msm_model.pkl', 'rb') as f:
-                self.baymsm_mod = pickle.load(f)
+            self.baymsm_mod = self._read_pickle(model_dir / 'bayesian_msm_model.pkl')
             self.msm_mod = self.baymsm_mod.prior
+        else:
+            raise ValueError(f"Unknown msm_mode {self.hp_dict.msm_mode}")
+
         self.traj_weights = self.msm_mod.compute_trajectory_weights(self.dtrajs)
-        self.connected_states = np.load(model_dir/'connected_states.npy')
-        self.disconnected_states = np.setdiff1d(np.arange(self.hp_dict.cluster_n), self.connected_states) 
+        self.connected_states = np.load(model_dir / 'connected_states.npy')
+        self.disconnected_states = np.setdiff1d(np.arange(self.hp_dict.cluster_n), self.connected_states)
+        self._index_states = compute_index_states(self.dtrajs)
 
         print('Done')
 
@@ -111,8 +118,11 @@ class MSMStudy():
         self._pcca_n = n
         self.pcca_mod = self.msm_mod.pcca(n)
         self.pcca_assignment = self.pcca_mod.assignments
-        self.micro_to_macro = {self.connected_states[i]: self.pcca_assignment[i] for i in range(len(self.connected_states))}
-        self.ptraj_cat = np.array([self.micro_to_macro[d] if d in self.connected_states else -1 for d in self.dtraj_cat])
+        self.micro_to_macro = dict(zip(self.connected_states, self.pcca_assignment))
+        mask = np.isin(self.dtraj_cat, self.connected_states)
+        mapped = np.full_like(self.dtraj_cat, fill_value=-1)
+        mapped[mask] = [self.micro_to_macro[idx] for idx in self.dtraj_cat[mask]]
+        self.ptraj_cat = mapped
 
 
     def transform(self, ftraj):
@@ -126,10 +136,12 @@ class MSMStudy():
             raise ValueError('PCCA model not found. Run estimate_MSM or restore_models first.')
         
         ttraj = self.tica_mod.transform(ftraj)
-        dtraj = self.kmeans_mod.transform(ttraj)[0].flatten()
-        connected_d = np.array([idx for idx in dtraj if idx in self.connected_states]).flatten()
-        disconnected_d = np.array([idx for idx in dtraj if idx in self.disconnected_states]).flatten()
-        pcca_assignment = np.array([self.micro_to_macro[d] for d in connected_d])
+        dtraj = self.kmeans_mod.transform(ttraj)[0].ravel()
+
+        connected_mask = np.isin(dtraj, self.connected_states)
+        connected_d = dtraj[connected_mask]
+        disconnected_d = dtraj[~connected_mask]
+        pcca_assignment = np.array([self.micro_to_macro[d] for d in connected_d]) if connected_d.size else np.empty((0,), dtype=int)
 
         return ttraj, dtraj, connected_d, disconnected_d, pcca_assignment
     
@@ -150,14 +162,13 @@ class MSMStudy():
         state_samples_count: dict[int, int]
             The states to sampled from : the number of samples to be taken
         """
-        
+
         assert len(microstate_weights) == len(connected_states), 'The distribution should have the same length as the connected states'
 
-        state_indices = np.random.choice(len(microstate_weights), size=n_samples, p=microstate_weights)
-        counts = np.bincount(state_indices)
-        state_samples_count = {connected_states[i]:count for i, count in enumerate(counts) if count!=0}
+        sampled_states = np.random.choice(connected_states, size=n_samples, p=microstate_weights)
+        unique_states, counts = np.unique(sampled_states, return_counts=True)
 
-        return state_samples_count
+        return dict(zip(unique_states, counts))
 
 
     def _get_samples_from_state(self, state_samples_count):
@@ -173,13 +184,15 @@ class MSMStudy():
             The samples to be taken. The samples are tuples of (ftraj_idx, frame_idx)
         """
 
-        index_states = compute_index_states(self.dtrajs)
         samples = []
         for state_to_sample_from, n_samples in state_samples_count.items():
-            samples.append(np.array(index_states[state_to_sample_from])[np.random.choice(range(len(index_states[state_to_sample_from])), n_samples)])
-        samples = np.concatenate(samples)
+            indices = np.array(self._index_states[state_to_sample_from])
+            if n_samples > len(indices):
+                raise ValueError(f'Requested {n_samples} samples from state {state_to_sample_from} which only has {len(indices)} frames')
+            chooser = np.random.choice(len(indices), size=n_samples, replace=False)
+            samples.append(indices[chooser])
 
-        return samples
+        return np.concatenate(samples) if samples else np.empty((0, 2), dtype=int)
     
 
     def _get_all_frames_from_state(self, microstate_id):
@@ -197,10 +210,9 @@ class MSMStudy():
             All samples from the microstate. The samples are tuples of (ftraj_idx, frame_idx)
         """
         
-        index_states = compute_index_states(self.dtrajs)
         try:
             # Return all frames from this microstate
-            samples = np.array(index_states[microstate_id])
+            samples = np.array(self._index_states[microstate_id])
         except KeyError:
             raise ValueError(f'Microstate {microstate_id} not found in the trajectory data')
         
@@ -263,7 +275,7 @@ class MSMStudy():
             weights[states_to_sample] = 1
             weights = weights / np.sum(weights)
         else:
-            raise ValueError('weights should be either "stationary" or "uniform"')
+            raise ValueError('weights should be either "equilibrium" or "uniform"')
         
         state_samples_count = self._get_state_count_from_distrib(weights, self.connected_states, n_sample)
         samples = self._get_samples_from_state(state_samples_count)
@@ -320,25 +332,33 @@ class MSMStudy():
             The mapped samples. The samples are tuples of (rtraj_idx, rframe_idx)
         """
 
-        datasets_study = {key: self.traj_data.datasets[key] for key in dataset_keys} # Datasets used in this study 
-        num_of_rtrajs_per_ds = {key:len(datasets_study[key]['rtraj_files']) for key in datasets_study.keys()}
-        stride_of_rtraj_idx = np.concatenate([np.ones(num)*datasets_study[k]['stride'] for k, num in num_of_rtrajs_per_ds.items()])
+        datasets_study = [self.traj_data.datasets[key] for key in dataset_keys]
+        strides = []
+        for dataset in datasets_study:
+            stride = dataset.get('stride', 1)
+            strides.extend([stride] * len(dataset['rtraj_files']))
+        stride_lookup = np.asarray(strides, dtype=int) if strides else np.array([], dtype=int)
 
         if isinstance(samples, list):
-            rtraj_samples = []
+            sample_dict = defaultdict(list)
             for ftraj_idx, frame_idx in samples:
-                rtraj_idx = self.mapping[ftraj_idx]
-                rframe_idx = frame_idx * stride_of_rtraj_idx[rtraj_idx]
-                rtraj_samples.append([rtraj_idx, rframe_idx])
+                sample_dict[ftraj_idx].append(frame_idx)
         elif isinstance(samples, dict):
-            rtraj_samples = {}
-            for ftraj_idx, frame_idx in samples.items():
-                rtraj_idx = self.mapping[ftraj_idx]
-                rframe_idx = [int(idx * stride_of_rtraj_idx[rtraj_idx]) for idx in frame_idx]
-                rtraj_samples[rtraj_idx] = rframe_idx
+            sample_dict = samples
         else:
             raise ValueError('samples should be either a list or a dictionary')
-        return rtraj_samples
+
+        rtraj_samples = {}
+        for ftraj_idx, frame_idx in sample_dict.items():
+            rtraj_idx = self.mapping[ftraj_idx]
+            stride = stride_lookup[rtraj_idx] if stride_lookup.size else 1
+            scaled = [int(idx * stride) for idx in np.atleast_1d(frame_idx)]
+            rtraj_samples.setdefault(rtraj_idx, []).extend(scaled)
+
+        if isinstance(samples, list):
+            return [[traj_idx, idx] for traj_idx, indices in rtraj_samples.items() for idx in indices]
+
+        return {traj_idx: sorted(set(indices)) for traj_idx, indices in rtraj_samples.items()}
 
 
     def save_samples(self, samples, fname, ref=None, save_ids=True, concat=True):

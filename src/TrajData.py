@@ -2,9 +2,7 @@ from pathlib import Path
 from natsort import natsorted
 from tqdm import tqdm
 import numpy as np
-import re 
 import os
-import json
 import mdtraj as md
 
 
@@ -22,11 +20,11 @@ class TrajData():
         '''
 
         self.protein = protein
-        self.datasets = dict()
-        self._ftrajs = dict()
+        self.datasets = {}
+        self._ftrajs = {}
     
 
-    def add_dataset(self, key, rtraj_dir, ftraj_dir, dt, rtraj_glob='*'):
+    def add_dataset(self, key, rtraj_dir, ftraj_dir, dt, rtraj_glob='*', exclude_files=None):
         '''
         Set a simulation dataset by setting the raw and featurised trajectory directories.
         
@@ -40,162 +38,147 @@ class TrajData():
             Directory of the featurised simulation trajectories
         dt : float
             Time step of the simulation trajectories in ns
-        glob : str or None
+        rtraj_glob : str
             Glob pattern to search for the raw trajectory files. By default all files in the directory are considered as trajectories.
+        exclude_files : list of str, optional
+            List of exact filenames to exclude from the dataset
         '''
 
         if key in self.datasets:
             print(f'Key <{key}> already exists in the dataset.')
             return None
-        
+
         rtraj_dir = Path(rtraj_dir)
         ftraj_dir = Path(ftraj_dir)
-        rtraj_files = natsorted([traj for traj in rtraj_dir.glob(rtraj_glob)])
+        rtraj_files = natsorted(rtraj_dir.glob(rtraj_glob))
 
-        if len(rtraj_files) == 0:
+        if not rtraj_files:
             raise ValueError(f'No raw trajectory files found in {rtraj_dir}. Check the directory or glob pattern.')
-        
+
+        if exclude_files:
+            exclude = set(exclude_files)
+            filtered = [traj for traj in rtraj_files if traj.name not in exclude]
+            if len(filtered) != len(rtraj_files):
+                removed = len(rtraj_files) - len(filtered)
+                print(f'Excluded {removed} trajectories: {sorted(exclude)}')
+            rtraj_files = filtered
+
         print(f'Setting dataset <{key}>. \nNumber of raw trajectories: {len(rtraj_files)}\n')
-        self.datasets[key] = {'rtraj_dir': rtraj_dir,
-                             'ftraj_dir': ftraj_dir,
-                             'rtraj_files': rtraj_files,
-                             'dt': dt}
-        self._ftrajs[key] = dict()
+        self.datasets[key] = {
+            'rtraj_dir': rtraj_dir,
+            'ftraj_dir': ftraj_dir,
+            'rtraj_files': rtraj_files,
+            'dt': dt,
+        }
+        self._ftrajs[key] = {}
 
 
     def __str__(self):
-        return f'TrajData for: {self._protein}\nDatasets: {list(self.datasets.keys())}'
+        '''Represent the object with the protein name and registered datasets.''' 
+        return f'TrajData for: {self.protein}\nDatasets: {list(self.datasets.keys())}'
 
 
     def featurize(self, key, featurisers, feature_names=None, top=None, **kwargs):
         '''
-        Featurize the trajectories in rtraj_dir and save the feature trajectories to ftraj_dir.
+        Run the selected featurisers on every raw trajectory in ``key`` and store them on disk.
 
         Parameters
         ----------
         key : str
-            The key to the dataset
-        featurisers : list
-            A list of functions that featurize the trajectories
-        feature_names : list or None
-            A list of names for saving featurised trajectories. If None, the names will be the same as the featurisers
-        top : str or None
-            The topology file for the trajectories. If None, assume the trajectory format include topology information
-        kwargs : dict
-            Some featuring functions may require additional arguments
+            Dataset identifier registered with :meth:`add_dataset`.
+        featurisers : Iterable[Callable]
+            Callables that accept an ``mdtraj.Trajectory`` and persist the computed features.
+        feature_names : Iterable[str], optional
+            Custom directory/filename prefixes for each featuriser. Defaults to the featuriser
+            name prefix when omitted.
+        top : str or pathlib.Path, optional
+            Optional topology passed through to :func:`mdtraj.load`.
+        **kwargs : dict
+            Extra keyword arguments forwarded to each featuriser.
         '''
 
-        # I may want to implement multiprocessing for featurization
-        
-        try:
-            save_dir = self.datasets[key]['ftraj_dir']
-            traj_files = self.datasets[key]['rtraj_files']
-        except KeyError:
-            raise ValueError(f'Dataset {key} not found. Set the dataset first.')
+        dataset = self._get_dataset(key)
+        save_dir = dataset['ftraj_dir']
+        traj_files = dataset['rtraj_files']
 
-        if not save_dir.exists(): save_dir.mkdir(parents=True, exist_ok=True)
-        if feature_names is not None: assert len(featurisers) == len(feature_names), 'The number of featurisers and feature names do not match'
+        save_dir.mkdir(parents=True, exist_ok=True)
+        if feature_names is not None and len(featurisers) != len(feature_names):
+            raise ValueError('The number of featurisers and feature names do not match')
+
+        names = feature_names or [f.__name__.split('_')[0] for f in featurisers]
+        for name in names:
+            (save_dir / name).mkdir(parents=True, exist_ok=True)
 
         print(f'Featurising protein {self.protein}')
         print(f'Featurisers: {[f.__name__ for f in featurisers]}')
 
-        if feature_names is None:
-            names = [featuriser.__name__.split('_')[0] for featuriser in featurisers]
-        else:
-            names = feature_names
-        
-        for name in names:
-            if not (save_dir / name).exists(): 
-                (save_dir / name).mkdir(parents=True, exist_ok=True)
-
-        for i, traj in tqdm(enumerate(traj_files), total=len(traj_files)):
+        for traj in tqdm(traj_files, total=len(traj_files)):
             md_traj = None
-            print('Featurising', traj.stem)
-
             for featuriser, name in zip(featurisers, names):
-                
-                ftraj_f = save_dir / name / f"{traj.stem}_{name}.npy"
-                # ftraj_f = save_dir / name / f"{traj.stem}.npy"
-                if ftraj_f.is_file():
-                    print(traj.stem, f"{name} ftraj already exist.")
+                ftraj_path = save_dir / name / f"{traj.stem}_{name}.npy"
+                if ftraj_path.exists():
+                    print(f'Feature trajectory {ftraj_path} already exists. Skipping.')
                     continue
 
                 if md_traj is None:
                     try:
-                        if top is None:
-                            md_traj = md.load(traj)
-                        else:
-                            md_traj = md.load(traj, top=top)
-                    except:
-                        print(f'!!! Fail to read {traj} !!!')
+                        md_traj = md.load(traj, top=top) if top else md.load(traj)
+                    except Exception as err:
+                        print(f'Failed to read {traj}: {err}')
                         break
 
                 try:
-                    _ = featuriser(md_traj, self.protein, save_to_disk=ftraj_f, **kwargs)
-                    print('Featurised', traj.stem, f"{name} ftraj.")
+                    featuriser(md_traj, self.protein, save_to_disk=ftraj_path, **kwargs)
                 except Exception as err:
-                    if os.path.exists(ftraj_f): os.remove(ftraj_f)
-                    print(f"Fail to featurise {traj.stem} with {name}:\n{err}")
+                    if ftraj_path.exists():
+                        os.remove(ftraj_path)
+                    print(f"Fail to featurise {traj.stem} with {name}: {err}")
 
 
     def load_ftrajs(self, key, feature_names, internal_names=None):
         '''
-        Load the featurised trajectories from the save directory.
-        
+        Load feature trajectories from disk into memory for the requested dataset.
+
         Parameters
         ----------
         key : str
-            The key to the dataset
-        feature_names : list
-            A list of strings of features. Should correspond to the subdirectory of ftraj files in the ftraj directory
-        internal_names : list or None
-            A list of names to assign to the ftrajs loaded internally. If None, the names will be the same as the features
+            Dataset identifier registered with :meth:`add_dataset`.
+        feature_names : Iterable[str]
+            Directory names corresponding to previously featurised trajectories.
+        internal_names : Iterable[str], optional
+            Alternative keys to store the loaded trajectories under; defaults to
+            ``feature_names`` when omitted.
         '''
 
-        try:
-            print(key)
-            save_dir = self.datasets[key]['ftraj_dir']
-        except KeyError:
-            raise ValueError(f'Dataset {key} not found. Set the dataset first.')
+        dataset = self._get_dataset(key)
+        save_dir = dataset['ftraj_dir']
+        rtraj_files = dataset['rtraj_files']
 
-        if internal_names is not None: 
-            assert len(feature_names) == len(internal_names), 'The number of features and feature names do not match'
-            names = internal_names
-        else:
-            names = feature_names
-        
-        new_ftraj_files_ls = []
-        new_feature_ls = []
-        new_name_ls = []
+        names = internal_names or feature_names
+        if len(feature_names) != len(names):
+            raise ValueError('The number of features and internal names do not match')
+
+        cache = self._ftrajs.setdefault(key, {})
 
         for feature, name in zip(feature_names, names):
-            if name in self._ftrajs and self._ftrajs[name] is not None:
-                print(f'Feature {feature} already loaded as {name}. Skipping...')
-            else:
-                ftraj_files = natsorted([str(ftraj) for ftraj in (save_dir/name).glob(f'*_{feature}.npy')])
-                if len(ftraj_files) == 0:
-                    raise ValueError(f'No feature trajectories found for {feature}. Check the directory.')
-                if len(ftraj_files) != len(self.datasets[key]['rtraj_files']):
-                    raise ValueError(f'Number of feature trajectories ({len(ftraj_files)}) does not match the number of raw trajectories ({len(self.datasets[key]["rtraj_files"])}). No of ftrajs not matching no of rtrajs. Have all raw trajectories been featurised?')
-                new_ftraj_files_ls.append(ftraj_files)
-                new_feature_ls.append(feature)
-                new_name_ls.append(name)
+            if cache.get(name) is not None:
+                continue
 
-        ftraj_files_lens = [len(traj_files) for traj_files in new_ftraj_files_ls]
-        if not all(len == ftraj_files_lens[0] for len in ftraj_files_lens):
-            raise ValueError('Feature trajectories are not of equal length. Check if the feature trajectories exist.')
+            expected = [save_dir / name / f"{traj.stem}_{feature}.npy" for traj in rtraj_files]
+            missing = [path for path in expected if not path.exists()]
+            if missing:
+                raise ValueError(f'Feature trajectories missing for {feature}: {missing[:3]}')
 
-        for ftraj_files, feature, name in zip(new_ftraj_files_ls, new_feature_ls, new_name_ls):
-            print("Loading feature: ", feature)
-            feature_ls = []
-            for ftraj_file in tqdm(ftraj_files, total=len(ftraj_files)):
-                ftraj = np.load(ftraj_file, allow_pickle=True)
+            trajs = []
+            for ftraj_path in tqdm(expected, total=len(expected), desc=f'Loading {feature} ({key})'):
+                ftraj = np.load(ftraj_path, allow_pickle=True)
                 if ftraj.ndim == 1:
                     ftraj = ftraj[:, np.newaxis]
-                feature_ls.append(ftraj)
-            self._ftrajs[key][name] = feature_ls
+                trajs.append(ftraj)
 
+            cache[name] = trajs
     
+
     @staticmethod
     def prepare_ftrajs(ftraj_dict, stride, frame_no_cutoff, convert_dihed_ids):
         '''
@@ -325,3 +308,10 @@ class TrajData():
         for key in self._ftrajs.keys():
             print(f'Dataset <{key}> ftrajs: {list(self._ftrajs[key].keys())}')
 
+
+    def _get_dataset(self, key):
+        '''Return the dataset metadata for ``key`` or raise a helpful error.''' 
+        try:
+            return self.datasets[key]
+        except KeyError as exc:
+            raise ValueError(f'Dataset {key} not found. Set the dataset first.') from exc
