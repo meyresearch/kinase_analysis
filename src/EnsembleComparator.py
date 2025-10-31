@@ -70,6 +70,7 @@ class EnsembleComparator:
     def __init__(
         self,
         work_dir: Optional[Path | str] = None,
+        topology: Optional[Path | str] = None,
     ) -> None:
         base = Path(work_dir) if work_dir else Path.cwd() / "ensemble_comparator"
 
@@ -99,6 +100,7 @@ class EnsembleComparator:
         self.atom_indices_info: Optional[Dict[str, List[Tuple[int, ...]]]] = None
         self.reference_traj: Optional[md.Trajectory] = None
         self.metadata: Dict = {}
+        self.topology = topology
 
         self.logistic_model: Optional[Pipeline] = None
         self.random_forest_model: Optional[Pipeline] = None
@@ -138,8 +140,12 @@ class EnsembleComparator:
         if not files_1 or not files_2:
             raise ValueError("Both ensembles must provide at least one trajectory file.")
 
-        s1_traj = [md.load(str(path)) for path in files_1]
-        s2_traj = [md.load(str(path)) for path in files_2]
+        if self.topology is not None:
+            s1_traj = [md.load(str(path), top=self.topology) for path in files_1]
+            s2_traj = [md.load(str(path), top=self.topology) for path in files_2]
+        else:
+            s1_traj = [md.load(str(path)) for path in files_1]
+            s2_traj = [md.load(str(path)) for path in files_2]
 
         self.reference_traj = s1_traj[0]
 
@@ -479,7 +485,7 @@ class EnsembleComparator:
         pipe = Pipeline([
             ("scaler", StandardScaler(with_mean=True)),
             ("anova", SelectKBest(score_func=f_classif, k=1000)),
-            ("rf", RandomForestClassifier(random_state=42, n_jobs=-1)),
+            ("rf", RandomForestClassifier(random_state=42, n_jobs=-1, class_weight="balanced")),
         ])
 
         cv = StratifiedKFold(n_splits=cv_splits, shuffle=True, random_state=42)
@@ -569,7 +575,7 @@ class EnsembleComparator:
             raise FileNotFoundError(
                 f"Reference trajectory file missing: {self.metadata['reference_traj']}"
             )
-        self.reference_traj = md.load(str(ref_path))
+        self.reference_traj = md.load(str(ref_path), top=self.topology if self.topology is not None else None)
 
     def _build_selected_dataset(self, idx: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         if self.s1_features is None or self.s2_features is None:

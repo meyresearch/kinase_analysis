@@ -1,5 +1,6 @@
 from deeptime.markov.sample import compute_index_states
 import mdtraj as md 
+import funcs_featurise
 
 import json
 import pickle
@@ -126,14 +127,14 @@ class MSMStudy():
 
 
     def transform(self, ftraj):
-        if not self.tica_mod:
-            raise ValueError('TICA model not found. Run estimate_MSM or restore_models first.')
-        if not self.kmeans_mod:
-            raise ValueError('Kmeans model not found. Run estimate_MSM or restore_models first.')
-        if not self.msm_mod:
-            raise ValueError('MSM model not found. Run estimate_MSM or restore_models first.')
-        if not self.pcca_mod:
-            raise ValueError('PCCA model not found. Run estimate_MSM or restore_models first.')
+        if not hasattr(self, 'tica_mod') or self.tica_mod is None:
+            raise ValueError('TICA model not found. Run set_hp_id to load models first.')
+        if not hasattr(self, 'kmeans_mod') or self.kmeans_mod is None:
+            raise ValueError('Kmeans model not found. Run set_hp_id to load models first.')
+        if not hasattr(self, 'msm_mod') or self.msm_mod is None:
+            raise ValueError('MSM model not found. Run set_hp_id to load models first.')
+        if not hasattr(self, 'pcca_mod') or self.pcca_mod is None:
+            raise ValueError('PCCA model not found. Run run_pcca first.')
         
         ttraj = self.tica_mod.transform(ftraj)
         dtraj = self.kmeans_mod.transform(ttraj)[0].ravel()
@@ -145,6 +146,43 @@ class MSMStudy():
 
         return ttraj, dtraj, connected_d, disconnected_d, pcca_assignment
     
+
+    def get_population(self, pdb):
+        from scipy.spatial.distance import pdist, squareform
+        struct = md.load(pdb)
+        top = struct.topology
+        protein = struct.atom_slice(top.select('protein and chainid 0'))
+
+        featurizers = [getattr(funcs_featurise, name+'_featuriser') for name in self.hp_dict['features'].split(' ')]
+        print(f'Featurizers used: {[f.__name__ for f in featurizers]}')
+        feature_list = []
+        for featuriser in featurizers:
+            if not 'dihed' in featuriser.__name__:
+                feat = featuriser(protein, protein=self.protein, save_to_disk=None)
+            else:
+                feat = featuriser(protein, protein=self.protein, sin_cos=True, save_to_disk=None)
+            feature_list.append(feat)
+        ftraj = np.concatenate(feature_list, axis=1)
+        ttraj = self.tica_mod.transform(ftraj)
+        cluster_centers = self.kmeans_mod.cluster_centers_
+        distances_to_centroids = np.linalg.norm(cluster_centers - ttraj, axis=1)
+        closest_centroid = np.argmin(distances_to_centroids)
+        closest_distance = distances_to_centroids[closest_centroid]
+
+        D = squareform(pdist(self.kmeans_mod.cluster_centers_))  # centroid-to-centroid distances (k, k)
+        np.fill_diagonal(D, np.inf)
+        safe_radius = D.min(axis=1) 
+        if closest_distance <= safe_radius[closest_centroid]:
+            print(f'Closest centroid: {closest_centroid} at distance {closest_distance:.4f} within safe radius {safe_radius[closest_centroid]:.4f}')
+        else:
+            print(f'Warning: Closest centroid: {closest_centroid} at distance {closest_distance:.4f} outside safe radius {safe_radius[closest_centroid]:.4f}')
+        
+        macrostate_id = self.micro_to_macro.get(closest_centroid, None)
+        if macrostate_id is not None:
+            population = self.msm_mod.stationary_distribution[self.pcca_mod.assignments == macrostate_id].sum()
+            return population
+        else:
+            return 0.0
 
     def _get_state_count_from_distrib(self, microstate_weights, connected_states, n_samples):
         """
