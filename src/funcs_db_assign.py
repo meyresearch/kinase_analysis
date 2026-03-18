@@ -23,18 +23,46 @@ def dihedral_distance(vector1, vector2):
     return total_distance/len(vector1)
 
 
-def assign_dfg_spatial_hdbscan(dbdist, hdbscan_model, confidence_threshold=0.01):
+def assign_dfg_spatial_hdbscan(dbdist, hdbscan_model, mapping=None, confidence_threshold=0.01):
     """
-    Assign conformations to a one of the 3 spatial clusters based on the distance to the cluster's centroid.
-    Cluster indices for DFG spatial groups: 0 : DFG-in,
-                                            1 : DFG-inter,
-                                            2 : DFG-out
+    Assign conformations to one of the 3 spatial clusters using HDBSCAN approximate prediction.
+
+    Original cluster indices:
+        0 : DFG-in
+        1 : DFG-inter
+        2 : DFG-out
+
+    Parameters
+    ----------
+    dbdist : array-like, shape (n_samples, n_features)
+        Input features.
+    hdbscan_model : str or fitted HDBSCAN object
+        Path to pickled HDBSCAN model, or the fitted model itself.
+    mapping : dict, optional
+        Mapping from original labels to desired labels, e.g.
+        {-1: -1, 0: 1, 1: 2, 2: 0}
+    confidence_threshold : float, optional
+        Points with prediction strength below this threshold are assigned to -1.
+
+    Returns
+    -------
+    assignments : np.ndarray
+        Final assigned labels.
     """
-    model = pickle.load(open(hdbscan_model, 'rb'))
-    
+    if isinstance(hdbscan_model, str):
+        with open(hdbscan_model, "rb") as f:
+            model = pickle.load(f)
+    else:
+        model = hdbscan_model
+
     labels, strength = hdbscan.approximate_predict(model, dbdist)
+
     assignments = labels.copy()
     assignments[strength < confidence_threshold] = -1
+
+    if mapping is not None:
+        assignments = np.array([mapping[x] for x in assignments])
+
     return assignments
 
 
@@ -50,6 +78,73 @@ def assign_dfg_spatial_hdbscan(dbdist, hdbscan_model, confidence_threshold=0.01)
 #     distances = cdist(dbdist, centroids)
 #     assignments = np.argmin(distances, axis=1)
 #     return assignments
+
+
+def assign_ramachandran_codes(dbdihed_list):
+    # Get 4 letter codes for X, D, F Ramachandran assignment
+
+    centroids = {
+    "A": np.array([-np.pi/3, -np.pi/4]),   # (-60°, -45°)
+    "B": np.array([-2*np.pi/3,  2*np.pi/3]),  # (-120°, 120°)
+    "L": np.array([ np.pi/3,  np.pi/6])    # (60°, 30°)
+    }
+    threshold = np.pi
+
+    def angular_diff(a, b):
+        return np.arctan2(np.sin(a - b), np.cos(a - b))
+    
+    def ramachandran_distance(phi, psi, centroid):
+        dphi  = angular_diff(phi, centroid[0])
+        dpsi  = angular_diff(psi, centroid[1])
+        return np.sqrt(dphi**2 + dpsi**2)
+    
+    def distances_to_centroids(phi, psi, centroids):
+        return {
+            name: ramachandran_distance(phi, psi, center)
+            for name, center in centroids.items()
+        }
+    
+    def get_codes(distance_dict, threshold, default = 'X'):
+        labels = list(distance_dict.keys())
+        distance_arrays = [np.asarray(distance_dict[label]) for label in labels]
+
+        stacked = np.stack(distance_arrays, axis=0)
+        min_indices = stacked.argmin(axis=0)
+        min_values = stacked.min(axis=0)
+
+        codes = []
+        for idx, value in zip(min_indices.ravel(), min_values.ravel()):
+            codes.append(labels[idx] if value < threshold else default)
+
+        return codes
+
+    x_distances, d_distances, f_distances, f_chi_distances, codes = [], [], [], [], []
+    for dihedrals in dbdihed_list:
+        x_phi, x_psi = dihedrals[:, 0], dihedrals[:, 1]
+        d_phi, d_psi = dihedrals[:, 2], dihedrals[:, 3]
+        f_phi, f_psi = dihedrals[:, 4], dihedrals[:, 5]
+        f_chi = dihedrals[:, -1]
+
+        x_distance = distances_to_centroids(x_phi, x_psi, centroids)
+        d_distance = distances_to_centroids(d_phi, d_psi, centroids)
+        f_distance = distances_to_centroids(f_phi, f_psi, centroids)
+        f_chi_distance = {
+            name: np.abs(angular_diff(f_chi, center))
+            for name, center in {'plus':np.pi/3, 'minus':-np.pi/3, 'trans':np.pi}.items()
+        }
+        
+        x_distances.append(x_distance)
+        d_distances.append(d_distance)
+        f_distances.append(f_distance)
+        f_chi_distances.append(f_chi_distance)
+
+        x_code = get_codes(x_distance, threshold)
+        d_code = get_codes(d_distance, threshold)
+        f_code = get_codes(f_distance, threshold)
+        f_chi_code = get_codes(f_chi_distance, threshold)
+        codes.append([''.join(group) for group in zip(x_code, d_code, f_code, f_chi_code)])
+
+    return x_distances, d_distances, f_distances, f_chi_distances, codes
 
 
 def assign_dfg_dihed(dbdihed, dist_group, centroids, noise_cutoff=1):
@@ -84,7 +179,7 @@ def assign_dfg_dihed(dbdihed, dist_group, centroids, noise_cutoff=1):
 
 
 def dfg_featuriser(traj, protein, 
-                   hdbscan_model, dihed_centroids, 
+                   hdbscan_model, dihed_centroids, mapping=None,
                    save_to_disk=None, 
                    confidence_threshold=0.01, dihed_cutoff=1, 
                    spatial_name='dist_group', dihed_name='dihed_group') -> list[np.ndarray]:
@@ -127,7 +222,7 @@ def dfg_featuriser(traj, protein,
     assert dists.shape[1] == 2, 'Incorrect number of distance features, should be 2'
     assert diheds.shape[1] == 7, 'Incorrect number of dihedral features, should be 7'
 
-    spatial_assignments = assign_dfg_spatial_hdbscan(dists, hdbscan_model, confidence_threshold)
+    spatial_assignments = assign_dfg_spatial_hdbscan(dists, hdbscan_model, mapping, confidence_threshold)
     dihed_assignments = np.array(list(map(lambda ds: assign_dfg_dihed(ds[0], ds[1], dihed_centroids, dihed_cutoff), zip(diheds, spatial_assignments))))
     if save_to_disk is not None: 
         dir = save_to_disk.parent
