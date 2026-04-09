@@ -12,8 +12,12 @@ traj_data.add_dataset(
     key='met-pdb-50ps',
     rtraj_dir='/arc/met-pdb-50ps_processed', 
     ftraj_dir='/home/rzhu/Desktop/projects/kinase_analysis/data/met/met-pdb-50ps/ftrajs', 
-    dt=0.05
+    dt=0.05,
+    exclude_files=['run1-clone8.h5',        # To exclude certain bad trajectories from MSM
+                   'run22-clone6.h5',
+                   'run58-clone1.h5']
 )
+
 traj_data.add_dataset(                                                                                                                                                                              
     key='met-af2-50ps',
     rtraj_dir='/arc/met-af2-50ps_processed', 
