@@ -38,7 +38,7 @@ def dbdist_featuriser(traj, protein, save_to_disk=None) -> np.ndarray:
     return distances
 
 
-def dbdihed_featuriser(traj, protein, save_to_disk=None) -> np.ndarray:
+def dbdihed_featuriser(traj, protein, sin_cos=False, save_to_disk=None) -> np.ndarray:
     ########## Dunbrack DFG dihedrals ############
     # The backbone dihedrals of 
     # X-DFG (residue before conserved Asp, Thr), DFG-Asp, DFG-Phe;
@@ -55,6 +55,8 @@ def dbdihed_featuriser(traj, protein, save_to_disk=None) -> np.ndarray:
                                       [indices['dfg_F-c'], indices['dfg_G-n'], indices['dfg_G-ca'], indices['dfg_G-c']],  # DFG-G phi (unimportant)
                                       [indices['dfg_G-n'], indices['dfg_G-ca'], indices['dfg_G-c'], indices['dfg_X-n']],  # DFG-G psi (unimportant)
                                       [indices['dfg_F-n'], indices['dfg_F-ca'], indices['dfg_F-cb'], indices['dfg_F-cg']]]) # DFG-F chi1
+    if sin_cos:
+        dihedrals = np.concatenate([np.cos(dihedrals), np.sin(dihedrals)], axis=1)
     if save_to_disk is not None: np.save(save_to_disk, dihedrals)
     return dihedrals
 
@@ -178,18 +180,47 @@ def alooprmsd_featuriser(traj, protein, reference, save_to_disk=None) -> np.ndar
 
 ## The writhe featurizer 
 
-import wiggle.writhe as wr
+# import wiggle.writhe as wr
 
-def get_sigma_tensor(coords):
-    # get the shape of the tensor - every 4th CA step
-    tmp = wr.find_Sigma_array(coords[0][::4])
-    # initialise array
-    sigma_tensor = np.zeros((coords.shape[0], tmp.shape[0], tmp.shape[0]))
-    for i in range(coords.shape[0]):
-        sigma_tensor[i] = wr.find_Sigma_array(coords[i][::4])
-    return sigma_tensor
+# def get_sigma_tensor(coords):
+#     # get the shape of the tensor - every 4th CA step
+#     tmp = wr.find_Sigma_array(coords[0][::4])
+#     # initialise array
+#     sigma_tensor = np.zeros((coords.shape[0], tmp.shape[0], tmp.shape[0]))
+#     for i in range(coords.shape[0]):
+#         sigma_tensor[i] = wr.find_Sigma_array(coords[i][::4])
+#     return sigma_tensor
 
-def writhe_featuriser(traj, protein, flatten=True, save_to_disk=None) -> np.ndarray:
+# def writhe_featuriser(traj, protein, flatten=True, save_to_disk=None) -> np.ndarray:
+#     '''
+#     Parameters
+#     ----------
+#     traj : mdtraj.Trajectory
+#         The trajectory object of a simulation
+#     protein : str
+#         The name of the protein in the topology to get relevant atom indices
+#     save_to_disk : str
+#         The path to save the feature to disk
+#     Returns
+#     -------
+#     np.ndarray
+#         A feature vector - tensor of shape (n_frames, 26, 26)
+#     '''
+
+#     ca_indices = traj.topology.select('name CA')
+#     ca_coords = traj.xyz[:, ca_indices] # im assuming this loads a (number_frames, number_residues, 3) array
+#     ca_coords_float64 = ca_coords.astype(np.float64)
+    
+#     sigma_tensor = get_sigma_tensor(ca_coords_float64)
+#     if flatten:
+#         sigma_tensor = sigma_tensor.reshape(sigma_tensor.shape[0], -1)
+#     if save_to_disk is not None:
+#         np.save(save_to_disk, sigma_tensor)
+#     return sigma_tensor
+
+
+## For Josh's writhe testing. Extract the every 4th CA coords every 10 ns (every 20 frames)
+def ca_coords_featuriser(traj, protein, delta_ca=4, delta_t=10, save_to_disk=None) -> np.ndarray:
     '''
     Parameters
     ----------
@@ -202,19 +233,15 @@ def writhe_featuriser(traj, protein, flatten=True, save_to_disk=None) -> np.ndar
     Returns
     -------
     np.ndarray
-        A feature vector - tensor of shape (n_frames, 26, 26)
+        A feature vector - tensor of shape (n_frames//delta_t, n_residues//delta_ca, 3)
     '''
 
     ca_indices = traj.topology.select('name CA')
     ca_coords = traj.xyz[:, ca_indices] # im assuming this loads a (number_frames, number_residues, 3) array
-    ca_coords_float64 = ca_coords.astype(np.float64)
-    
-    sigma_tensor = get_sigma_tensor(ca_coords_float64)
-    if flatten:
-        sigma_tensor = sigma_tensor.reshape(sigma_tensor.shape[0], -1)
+    ca_coords_subsampled = ca_coords[::delta_t, ::delta_ca, :]
     if save_to_disk is not None:
-        np.save(save_to_disk, sigma_tensor)
-    return sigma_tensor
+        np.save(save_to_disk, ca_coords_subsampled)
+    return ca_coords_subsampled
 
 
 ## R_gyration featurizer

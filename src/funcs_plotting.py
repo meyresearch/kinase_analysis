@@ -10,9 +10,9 @@ from deeptime.util import energy2d
 import numpy as np
 
 dfg_spatial_colors = np.array(['#595959',        # Grey noise
-                               '#540D6E',        # Purple DFG-in
-                               '#EE4266',        # Red DFG-inter
-                               '#FFD23F'])       # Yellow DFG-out
+                               '#856798',        # Purple DFG-in
+                               '#ff796c',        # Red DFG-inter
+                               '#fac205'])       # Yellow DFG-out
 
 # dfg_spatial_colors = np.array(['#595959',       # Grey noise
 #                                '#53F4A2',       # Green DFG-in
@@ -147,6 +147,25 @@ def plot_pcca_graph(traj_all, traj_weights,
                     g_alpha=0.8, connectionstyle='Angle3', 
                     savedir=None):
     
+    """
+    Plots a PCCA+ graph on top of a 2D free energy surface (FES).
+
+    Parameters
+    ----------
+    traj_all : np.ndarray
+        Array of shape (n_samples, n_dimensions) containing (tica) trajectory data.
+    traj_weights : np.ndarray
+        Array of shape (n_samples,) containing the weights for each trajectory point. Used in FES calculation.
+    c_centers : np.ndarray
+        Array of shape (n_clusters, n_dimensions) containing the cluster centers. Used to determine node positions.
+    matrix : np.ndarray
+        Matrix to build the graph, e.g., MFPT matrix between PCCA+ macrostates. Used to determine edge weights.
+    pcca_assignment : np.ndarray
+        Array of shape (n_clusters,) containing the PCCA+ assignment for each cluster. Used to group clusters into macrostates.
+    stat_dist : np.ndarray
+        Array of shape (n_clusters,) containing the stationary distribution of each cluster. Used to scale node sizes.
+    """
+
     n_states = len(np.unique(pcca_assignment))
     colours = [cm.get_cmap(pcca_cmap)(i/(n_states-1)) for i in range(n_states)]
     
@@ -166,11 +185,10 @@ def plot_pcca_graph(traj_all, traj_weights,
     node_ln_widths = np.cbrt(node_sizes/min(node_sizes))
     node_ft_sizes = np.cbrt(node_sizes/min(node_sizes))*8
 
-
-    fig, ax = plt.subplots(figsize=(11, 10))
     # Plot the FES as a background
-    ax, contour, cbar = plot_energy2d(energy2d(traj_all[:, dim_1], traj_all[:, dim_2], weights=traj_weights), ax=ax, contourf_kws=dict(cmap=fes_cmap))
     # Plot the microstate centers coloured by pcca assignment
+    fig, ax = plt.subplots(figsize=(11, 10))
+    ax, contour, cbar = plot_energy2d(energy2d(traj_all[:, dim_1], traj_all[:, dim_2], weights=traj_weights), ax=ax, contourf_kws=dict(cmap=fes_cmap))
     for i in range(n_states):
         ax.scatter(c_centers[pcca_assignment == i, dim_1], c_centers[pcca_assignment == i, dim_2], 
                     s=c_centers_s, c=colours[i], marker=c_centers_marker, alpha=c_centers_a, 
@@ -180,15 +198,14 @@ def plot_pcca_graph(traj_all, traj_weights,
     ax.set_ylabel(f'tIC {dim_2+1}', fontsize=14)
     cbar.ax.set_ylabel('Free energy (kT)', fontsize=14)
 
-    G = nx.DiGraph()
     # Add nodes and edges to the graph
+    G = nx.DiGraph()
     for i in range(n_states):
         G.add_node(i, label=f'{i+1}')
         for j in range(n_states):
-            if (i != j) and (matrix[i, j] < 3000000):
+            if (i != j) and (matrix[i, j] < 3000000):  # Ignore very large MFPTs
                 G.add_edge(i, j, weight=np.log2(max(matrix.flatten()) / matrix[i, j]))
     edge_widths = [edge[2]['weight'] for edge in G.edges(data=True)]
-
     nx.draw(G, pos, 
             node_size=node_sizes[[node[0] for node in G.nodes(data=True)]],
             node_color=[colours[node[0]] for node in list(G.nodes(data=True))], 
@@ -197,6 +214,7 @@ def plot_pcca_graph(traj_all, traj_weights,
             edge_color = [colours[edge[0]] for edge in G.edges(data=True)], 
             width=edge_widths, arrows=True, connectionstyle=connectionstyle,
             ax=ax)
+    
     # Add labels to the nodes
     node_labels = nx.get_node_attributes(G, 'label')
     for node, (x, y) in pos.items():
