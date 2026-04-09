@@ -1,0 +1,23 @@
+name: msm
+channels:
+  - conda-forge
+  - omnia
+  - defaults
+dependencies:
+  - deeptime
+  - mdanalysis
+  - mdtraj
+  - pyemma
+  - matplotlib
+  - pandas
+  - natsort
+  - tqdm
+  - addict
+  - ca-certificates
+  - certifi
+  - openssl
+  - ipykernel
+  - hdbscan
+  - jupyterlab
+  - rdkit
+prefix: /home/rzhu/Loc/miniconda3/envs/msm
