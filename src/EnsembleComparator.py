@@ -1,3 +1,5 @@
+"""Compare two structural ensembles with feature-based ML models (logistic / random forest)."""
+
 from __future__ import annotations
 
 import json
@@ -72,6 +74,10 @@ class EnsembleComparator:
         work_dir: Optional[Path | str] = None,
         topology: Optional[Path | str] = None,
     ) -> None:
+        """Set up the working-directory layout (features/models/plots/reports) and empty state.
+
+        ``topology`` is an optional shared topology passed to ``mdtraj.load`` for all trajectories.
+        """
         base = Path(work_dir) if work_dir else Path.cwd() / "ensemble_comparator"
 
         self.config = EnsembleComparatorConfig(
@@ -422,6 +428,7 @@ class EnsembleComparator:
         scoring: str,
         force: bool,
     ) -> Dict[str, float]:
+        """Grid-search and fit the scaler/ANOVA/L1-select/logistic pipeline; cache model and summary."""
         model_path = self.config.model_dir / "logistic_pipeline.joblib"
         summary_path = self.config.report_dir / "logistic_summary.json"
 
@@ -472,6 +479,7 @@ class EnsembleComparator:
         scoring: str,
         force: bool,
     ) -> Dict[str, float]:
+        """Grid-search and fit the scaler/ANOVA/random-forest pipeline; cache model and summary."""
         model_path = self.config.model_dir / "random_forest_pipeline.joblib"
         summary_path = self.config.report_dir / "random_forest_summary.json"
 
@@ -511,6 +519,7 @@ class EnsembleComparator:
         sources: Sequence[Path | str],
         pattern: str,
     ) -> List[Path]:
+        """Expand a sequence of files/directories into a flat list of trajectory files."""
         files: List[Path] = []
         for src in sources:
             path = Path(src)
@@ -524,6 +533,7 @@ class EnsembleComparator:
 
 
     def _features_cached(self) -> bool:
+        """Return True if all cached feature arrays/metadata exist on disk."""
         base = self.config.feature_cache_dir
         required = [
             base / "s1_features.npy",
@@ -535,6 +545,7 @@ class EnsembleComparator:
 
 
     def _cache_features(self) -> None:
+        """Persist feature arrays, feature/atom info, and run metadata to the cache directory."""
         base = self.config.feature_cache_dir
         np.save(base / "s1_features.npy", self.s1_features)
         np.save(base / "s2_features.npy", self.s2_features)
@@ -551,6 +562,7 @@ class EnsembleComparator:
 
 
     def _load_cached_features(self, require_reference: bool = False) -> None:
+        """Load cached feature arrays/metadata; optionally also reload the reference trajectory."""
         base = self.config.feature_cache_dir
         self.s1_features = np.load(base / "s1_features.npy")
         self.s2_features = np.load(base / "s2_features.npy")
@@ -566,6 +578,7 @@ class EnsembleComparator:
             self._ensure_reference_traj_loaded()
 
     def _ensure_reference_traj_loaded(self) -> None:
+        """Load the reference trajectory from metadata if it is not already in memory."""
         if self.reference_traj is not None:
             return
         if not self.metadata or "reference_traj" not in self.metadata:
@@ -578,6 +591,7 @@ class EnsembleComparator:
         self.reference_traj = md.load(str(ref_path), top=self.topology if self.topology is not None else None)
 
     def _build_selected_dataset(self, idx: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+        """Stack both ensembles' selected feature columns into ``X`` with binary labels ``y``."""
         if self.s1_features is None or self.s2_features is None:
             self._load_cached_features(require_reference=False)
 
@@ -596,6 +610,7 @@ class EnsembleComparator:
         feature_importance: List[Tuple[int, float]],
         value_name: str,
     ) -> pd.DataFrame:
+        """Build a table of (feature index, value, type, atom description) from importance pairs."""
         rows = []
         for feature_idx, value in feature_importance:
             feature_type, description, atom_indices = get_feature_atoms(
@@ -619,6 +634,7 @@ class EnsembleComparator:
         return pd.DataFrame(rows)
 
     def _save_logistic_importance(self) -> None:
+        """Map logistic coefficients back to original features and write the importance CSV."""
         anova = self.logistic_model.named_steps["anova"]
         sparse = self.logistic_model.named_steps["sparse"]
         clf = self.logistic_model.named_steps["clf"]
@@ -643,6 +659,7 @@ class EnsembleComparator:
 
 
     def _save_random_importance(self) -> None:
+        """Map random-forest importances back to original features and write the importance CSV."""
         anova = self.random_forest_model.named_steps["anova"]
         rf = self.random_forest_model.named_steps["rf"]
 
@@ -774,6 +791,7 @@ class EnsembleComparator:
 
 
     def _load_logistic_from_disk(self) -> None:
+        """Load the trained logistic pipeline and its importance tables from disk."""
         model_path = self.config.model_dir / "logistic_pipeline.joblib"
         if not model_path.exists():
             raise FileNotFoundError("Logistic regression model has not been trained yet.")
@@ -783,6 +801,7 @@ class EnsembleComparator:
 
 
     def _load_random_forest_from_disk(self) -> None:
+        """Load the trained random-forest pipeline and its importance tables from disk."""
         model_path = self.config.model_dir / "random_forest_pipeline.joblib"
         if not model_path.exists():
             raise FileNotFoundError("Random forest model has not been trained yet.")
@@ -792,24 +811,28 @@ class EnsembleComparator:
 
 
     def _load_logistic_importance(self) -> None:
+        """Load the cached logistic feature-importance CSV if present."""
         path = self.config.report_dir / "logistic_feature_importance.csv"
         if path.exists():
             self.logistic_feature_importance = pd.read_csv(path)
 
 
     def _load_logistic_permutation_importance(self) -> None:
+        """Load the cached logistic permutation-importance CSV if present."""
         path = self.config.report_dir / "logistic_permutation_importance.csv"
         if path.exists():
             self.logistic_permutation_importance = pd.read_csv(path)
 
 
     def _load_random_importance(self) -> None:
+        """Load the cached random-forest feature-importance CSV if present."""
         path = self.config.report_dir / "random_forest_feature_importance.csv"
         if path.exists():
             self.random_forest_feature_importance = pd.read_csv(path)
 
 
     def _load_random_permutation_importance(self) -> None:
+        """Load the cached random-forest permutation-importance CSV if present."""
         path = self.config.report_dir / "random_forest_permutation_importance.csv"
         if path.exists():
             self.random_forest_permutation_importance = pd.read_csv(path)
@@ -820,6 +843,7 @@ class EnsembleComparator:
         feature_df: pd.DataFrame,
         value_col: str,
     ) -> Tuple[Optional[np.ndarray], Optional[List[int]]]:
+        """Build a symmetric residue-by-residue matrix of CA-distance feature values (or None)."""
         ca_df = feature_df[feature_df["feature_type"] == "ca_distances"]
         if ca_df.empty:
             return None, None
@@ -859,6 +883,7 @@ class EnsembleComparator:
         top_k: Optional[int],
         value_label: Optional[str] = None,
     ) -> Optional[plt.Figure]:
+        """Scatter phi/psi/chi dihedral feature values against residue number (or None if absent)."""
         dihedral_mask = feature_df["feature_type"].str.contains("phi|psi|chi", case=False, regex=True)
         dihedral_df = feature_df[dihedral_mask]
         if dihedral_df.empty:
@@ -868,6 +893,7 @@ class EnsembleComparator:
             dihedral_df = dihedral_df.nlargest(top_k, columns="abs_value")
 
         def _residue_from_indices(indices: Sequence[int]) -> int:
+            """Residue sequence number of the dihedral's central atom."""
             if not isinstance(indices, list):
                 indices = ast.literal_eval(indices)
             atom = self.reference_traj.topology.atom(indices[1 if len(indices) > 1 else 0])

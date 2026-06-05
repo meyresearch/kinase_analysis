@@ -1,5 +1,7 @@
+"""Reconstruct a saved MSM and analyse it: PCCA+, conformational sampling, populations."""
+
 from deeptime.markov.sample import compute_index_states
-import mdtraj as md 
+import mdtraj as md
 import funcs_featurise
 
 import json
@@ -14,7 +16,8 @@ from collections import defaultdict
 
 class MSMStudy():
     '''
-    This class reconstruct a MSM model from hyperparameters, saved trajectories, and models. 
+    Reconstruct a saved MSM from its hyperparameters, trajectories, and pickled models,
+    then expose PCCA+, sampling, and population-analysis helpers.
     '''
 
     def __init__(self, hps_table, traj_data, wk_dir):
@@ -41,6 +44,7 @@ class MSMStudy():
 
     @staticmethod
     def _load_numpy_series(directory):
+        """Load all ``*.npy`` files in ``directory`` (natural-sorted) as a list and their concatenation."""
         files = natsorted(Path(directory).glob('*.npy'))
         arrays = [np.load(f) for f in files]
         stacked = np.concatenate(arrays, axis=0) if arrays else np.empty((0,))
@@ -49,13 +53,15 @@ class MSMStudy():
 
     @staticmethod
     def _read_pickle(path):
+        """Unpickle and return the object stored at ``path``."""
         with open(path, 'rb') as handle:
             return pickle.load(handle)
 
 
     def set_hp_id(self, hp_id):
         '''
-        Select the model index to load
+        Select a study by ``hp_id``, set up its output directories and per-dataset
+        strides, and load all of its trajectories and models via :meth:`load_all`.
         '''
         assert hp_id in self.hps_table['hp_id'].values, f'hp_id {hp_id} not found in the hyperparameter table.'
         assert (self.wk_dir / str(hp_id)).exists(), f'Study directory {self.wk_dir / str(hp_id)} not found.'
@@ -81,6 +87,7 @@ class MSMStudy():
 
 
     def load_all(self):
+        """Load the TICA/discrete trajectories, fitted models, and derived state metadata for the selected ``hp_id``."""
 
         print('Loading trajectories...')
         self.ttrajs, self.ttraj_cat = self._load_numpy_series(self.save_dir / 'ttrajs')
@@ -114,7 +121,8 @@ class MSMStudy():
 
     def run_pcca(self, n):
         '''
-        Run PCCA+ on the MSM model
+        Coarse-grain the MSM into ``n`` macrostates with PCCA+ and store the
+        micro-to-macrostate assignments (disconnected microstates map to -1).
         '''
         self._pcca_n = n
         self.pcca_mod = self.msm_mod.pcca(n)
@@ -127,6 +135,8 @@ class MSMStudy():
 
 
     def transform(self, ftraj):
+        """Project a feature trajectory through TICA and k-means, returning the TICA output,
+        discrete trajectory, its connected/disconnected microstates, and PCCA+ macrostate labels."""
         if not hasattr(self, 'tica_mod') or self.tica_mod is None:
             raise ValueError('TICA model not found. Run set_hp_id to load models first.')
         if not hasattr(self, 'kmeans_mod') or self.kmeans_mod is None:
@@ -148,6 +158,12 @@ class MSMStudy():
     
 
     def get_population(self, pdb):
+        """Estimate the stationary population of the macrostate nearest a structure.
+
+        Featurise ``pdb``, project it onto the TICA space, assign it to its closest
+        k-means microstate (warning if outside that centroid's safe radius), and return
+        the MSM stationary population of the corresponding PCCA+ macrostate (0.0 if none).
+        """
         from scipy.spatial.distance import pdist, squareform
         struct = md.load(pdb)
         top = struct.topology
@@ -458,13 +474,10 @@ class MSMStudy():
             if ref is not None:
                 try:
                     sampled_frames = sampled_frames.superpose(ref, atom_indices=sampled_frames.top.select('name CA'))
-                except:
+                except Exception:
                     print('Wrong reference. Saving unsuperposed frames.')
-            
-            if isinstance(fname, Path):
-                fname_str = fname.as_posix()
-            else:
-                fname_str = fname
+
+            fname_str = fname.as_posix()
             sampled_frames.save(fname_str)
             print(f'Saved concatenated samples to {fname_str}')
         
@@ -479,7 +492,7 @@ class MSMStudy():
                 if ref is not None:
                     try:
                         sample_frames = sample_frames.superpose(ref, atom_indices=sample_frames.top.select('name CA'))
-                    except:
+                    except Exception:
                         print('Wrong reference. Saving unsuperposed frame.')
                 sample_file = fname / f'frames_{frame_count:04d}.pdb'
                 sample_frames.save(sample_file.as_posix())
@@ -488,9 +501,11 @@ class MSMStudy():
     
     @property
     def hp_id(self):
+        """Hyperparameter id of the currently loaded study (None until ``set_hp_id``)."""
         return self._hp_id
 
 
     @property
     def pcca_n(self):
+        """Number of PCCA+ macrostates last requested (None until ``run_pcca``)."""
         return self._pcca_n

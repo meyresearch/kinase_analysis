@@ -1,15 +1,35 @@
-# This file hard codes the atom indices that are used in feature calculations. 
-# Should we automate this for different kinases in the future? 
+"""Hard-coded atom/residue indices per kinase used by the featurisers.
+
+Residue numbers are specific to each supported protein (abl, egfr, met); MET
+variants apply an offset to match the af2/pdb numbering.
+"""
 
 import numpy as np
 
 def find_atomid(top, atom_name) -> int:
+    """Return the unique atom index in ``top`` matching ``atom_name`` (e.g. 'PHE382-CZ')."""
     atomid = np.where([str(atom) == atom_name for atom in top.atoms])[0]
-    assert len(atomid) == 1
+    assert len(atomid) == 1, f'Atom name {atom_name} not found or not unique in topology.'
     return atomid[0]
 
 
 def get_feature_indices(top, protein, feature):
+    """Map the named atoms/residues required by ``feature`` to indices in ``top``.
+
+    Parameters
+    ----------
+    top : mdtraj.Topology
+        Topology to resolve atom and residue names against.
+    protein : str
+        Protein identifier ('abl', 'egfr', or one containing 'met').
+    feature : str
+        Feature key, e.g. 'db_dist', 'db_dihed', 'aloop', 'aChelix_dist', 'pathway_angle'.
+
+    Returns
+    -------
+    dict
+        Mapping from descriptive names to atom or residue indices for the feature.
+    """
     indices = dict()
 
     if protein == 'abl':

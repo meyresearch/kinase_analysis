@@ -1,3 +1,5 @@
+"""Transition count estimation extending deeptime with optional prior counts."""
+
 import numpy as np
 from scipy.sparse import issparse
 from deeptime.markov import TransitionCountEstimator, TransitionCountModel
@@ -44,7 +46,8 @@ class PriorTransitionCountEstimator(TransitionCountEstimator):
     >>> np.testing.assert_equal(count_matrix, np.array([[2, 2], [0, 1]]))
     """
 
-    def __init__(self, lagtime: int, count_mode: str, n_states=None, sparse=False, prior: float = 0):   
+    def __init__(self, lagtime: int, count_mode: str, n_states=None, sparse=False, prior: float = 0):
+        """Configure the estimator; ``prior`` adds pseudo-counts to the count matrix (0 disables)."""
         super().__init__(lagtime=lagtime, count_mode=count_mode, n_states=n_states, sparse=sparse)
         self.prior = prior
 

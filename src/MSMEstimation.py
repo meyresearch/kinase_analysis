@@ -1,3 +1,5 @@
+"""Estimate MSMs (TICA -> k-means -> transition counts -> MSM) from a hyperparameter table."""
+
 from pathlib import Path
 from time import time
 import json
@@ -40,6 +42,7 @@ class MSMEstimation():
 
 
     def _prepare_save_dirs(self, hp_id):
+        """Create and return the (study, models, ttrajs, dtrajs) directories for ``hp_id``."""
         save_dir = self.wk_dir / f'{hp_id}'
         model_dir = save_dir / 'models'
         ttraj_dir = save_dir / 'ttrajs'
@@ -53,11 +56,13 @@ class MSMEstimation():
 
     @staticmethod
     def _write_params(save_dir, hp_dict):
+        """Write ``hp_dict`` to ``params.json`` in ``save_dir``."""
         with open(save_dir / 'params.json', 'w') as f:
             json.dump(dict(hp_dict), f, indent=4)
 
 
     def _study_exists(self, hp_dict, model_dir):
+        """Return True if ``hp_dict`` has an observation row and all expected model files on disk."""
         if not self.observation_path.exists():
             return False
 
@@ -147,6 +152,13 @@ class MSMEstimation():
 
     @staticmethod
     def estimate_msm(ftrajs, hp_dict, obs_dir, model_dir, ttraj_dir, dtraj_dir):
+        """Run the full TICA -> k-means -> count -> MSM pipeline for one hyperparameter set.
+
+        Models and trajectories are written under ``model_dir``/``ttraj_dir``/``dtraj_dir``, and a
+        row of diagnostics (timing, sparsity, eigenvalues, timescales, VAMP-2 scores, with
+        standard deviations for Bayesian MSMs) is appended to ``obs_dir/observation.csv``. On
+        failure the error is logged and a placeholder row is written instead.
+        """
         # Create observation output dictionaries that contains:
         # index of the study; whether the count matrix is sparase; eigenvalues; vamp2 scores
         n_score = 10
@@ -179,8 +191,8 @@ class MSMEstimation():
             results = {**heading, **sparse_dict, **ev_dict, **ev_std_dict, **ts_dict, **ts_std_dict,
                        **vamp2_dict, **vamp2_std_dict}   
             data = pd.DataFrame([results])
-            data.to_csv(obs_dir/f'observation.csv', index=False, mode='a', header=not os.path.exists(obs_dir/f'observation.csv'))
-            return None 
+            data.to_csv(obs_dir/'observation.csv', index=False, mode='a', header=not os.path.exists(obs_dir/'observation.csv'))
+            return None
         
         # Assemble the observation dicts
         heading['time_consumed'] = t_elapsed
@@ -192,13 +204,13 @@ class MSMEstimation():
                 ev_dict[f'ev_{k+1}'] = msm_mod.prior.eigenvalues()[k]
                 ev_std_dict[f'ev_std_{k+1}'] = msm_mod.gather_stats('eigenvalues').std[k]
                 ts_dict[f't_{k+2}'] = msm_mod.prior.timescales()[k]
-                ts_std_dict[f't_{k+2}'] = msm_mod.gather_stats('timescales').std[k]
+                ts_std_dict[f't_std_{k+2}'] = msm_mod.gather_stats('timescales').std[k]
                 vamp2_dict[f'vamp2_{k+2}'] = msm_mod.prior.score(dtrajs, r=2, dim=k+2)
                 vamp2_std_dict[f'vamp2_std_{k+2}'] = msm_mod.gather_stats('score', dtrajs=dtrajs, r=2, dim=k+2).std
         # If the model is maximum likelihood, report the results of the maximum likelihood model
         elif hp_dict.msm_mode == 'maximum_likelihood':
             no = min(msm_mod.transition_matrix.shape[0]-1, n_score)
-            sparse_dict = {'is_sparse' : msm_mod.transition_matrix.shape[0] != hp_dict.cluster_k}
+            sparse_dict = {'is_sparse' : msm_mod.transition_matrix.shape[0] != hp_dict.cluster_n}
             for k in range(no):
                 ev_dict[f'ev_{k+1}'] = msm_mod.eigenvalues()[k]
                 ts_dict[f't_{k+2}'] = msm_mod.timescales()[k]
@@ -208,7 +220,7 @@ class MSMEstimation():
         print('Saving results ...')
         results = {**heading, **sparse_dict, **ev_dict, **ev_std_dict, **ts_dict, **ts_std_dict, **vamp2_dict, **vamp2_std_dict}   
         data = pd.DataFrame([results])
-        data.to_csv(obs_dir/f'observation.csv', index=False, mode='a', header= not os.path.exists(obs_dir/f'observation.csv'))
+        data.to_csv(obs_dir/'observation.csv', index=False, mode='a', header=not os.path.exists(obs_dir/'observation.csv'))
         return None
 
     
@@ -266,9 +278,7 @@ class MSMEstimation():
             Hyperparameter dictionary.
         ttrajs : List[np.ndarray]
             List of TICA-transformed trajectories.
-        seed : int
-            Random seed.
-        
+
         Returns
         -------
         dtrajs : List[np.ndarray]

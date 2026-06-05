@@ -1,3 +1,5 @@
+"""I/O for raw and featurised trajectories feeding MSM estimation and analysis."""
+
 from pathlib import Path
 from natsort import natsorted
 from tqdm import tqdm
@@ -203,7 +205,7 @@ class TrajData():
             A dictionary mapping the indices of the selected feature trajectories to the original feature trajectories
         '''
         
-        ftrajs_raw = [v for v in ftraj_dict.values()]
+        ftrajs_raw = list(ftraj_dict.values())
         no_of_trajs = len(ftrajs_raw[0])
 
         ftrajs, mapping = [], {}
@@ -214,8 +216,8 @@ class TrajData():
 
             ftrajs_to_add = [ftraj[i] for ftraj in ftrajs_raw]
             if convert_dihed_ids is not None:
-                for id in convert_dihed_ids:
-                    ftrajs_to_add[id] = np.concatenate([np.cos(ftrajs_to_add[id]), np.sin(ftrajs_to_add[id])], axis=1)
+                for dihed_id in convert_dihed_ids:
+                    ftrajs_to_add[dihed_id] = np.concatenate([np.cos(ftrajs_to_add[dihed_id]), np.sin(ftrajs_to_add[dihed_id])], axis=1)
             
             if ftrajs_to_add[0].ndim == 1:
                 ftrajs_to_add = np.concatenate(ftrajs_to_add)[::stride]
@@ -257,9 +259,9 @@ class TrajData():
             keys = [keys]
             
         for key in keys:
-            if not key in self.datasets.keys():
+            if key not in self.datasets:
                 raise KeyError(f'Dataset key {key} not found. Set the dataset first.')
-            if not all(name in self._ftrajs[key].keys() for name in internal_names):
+            if not all(name in self._ftrajs[key] for name in internal_names):
                 raise ValueError(f'Not all internal names provided are loaded for key {key}. Load the feature trajectories first.')
 
         ftrajs, mapping, last_ftraj_no, last_rtraj_no = [], {}, 0, 0
@@ -305,7 +307,7 @@ class TrajData():
         '''
         Get the keys of the internal ftrajs dictionary.
         '''
-        for key in self._ftrajs.keys():
+        for key in self._ftrajs:
             print(f'Dataset <{key}> ftrajs: {list(self._ftrajs[key].keys())}')
 
 

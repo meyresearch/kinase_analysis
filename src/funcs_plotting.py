@@ -1,11 +1,12 @@
-# Functions for plotting MSM results
+"""Plotting helpers for MSM results: free-energy surfaces, eigenvectors, PCCA+ graphs,
+implied timescales, MFPT matrices, and Dunbrack cluster pies."""
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import matplotlib.colors as colors
 import matplotlib.cm as cm
 import networkx as nx
-from deeptime.plots import plot_implied_timescales, plot_energy2d, plot_contour2d_from_xyz
+from deeptime.plots import plot_energy2d
 from deeptime.util import energy2d
 import numpy as np
 
@@ -32,6 +33,11 @@ dfg_dihed_colors = np.array(['#595959',         # Grey noise
 def plot_ev(ev, c_centers, traj_all, traj_weights, title, savedir, dim_1=0, dim_2=1, dim_3=2, \
             ct_cmap='nipy_spectral', ct_a=0.6, ev_cmap='coolwarm', ev_a=0.8, ev_s=20, ev_marker='.', \
             ex=True, ex_s=100):
+    """Plot an eigenvector ``ev`` over cluster centres on two TICA free-energy projections.
+
+    The colour map is diverging about zero; if ``ex`` the argmin/argmax centres are marked.
+    Saved to ``savedir`` when given.
+    """
 
     vmin, vmax = min(ev), max(ev)
     divnorm = mpl.colors.TwoSlopeNorm(vmin=vmin, vcenter=0, vmax=vmax)
@@ -92,7 +98,13 @@ def plot_fe(traj_all, traj_weights, savedir=None, fes_cmap='nipy_spectral',
             state_assignment=None, n_states= None, state_population=None, pcca_cmap='gist_rainbow', edgecolor='black', linewidth=1,
             legend_marker_sizes=100,
             title=''):
-    
+    """Plot a 2D TICA free-energy surface, optionally overlaying cluster centres.
+
+    Centres can be coloured by macrostate ``state_assignment`` (with optional
+    ``state_population`` in the legend) and disconnected ``d_centers`` highlighted.
+    Saved to ``savedir`` when given.
+    """
+
     fig, ax = plt.subplots(figsize=(7, 6))
     ax, contour, cbar = plot_energy2d(energy2d(traj_all[:, dim_1], traj_all[:, dim_2], weights=traj_weights), ax=ax, contourf_kws=dict(cmap=fes_cmap))
     
@@ -283,7 +295,8 @@ def plot_ts(timescales, n_ts, dt, savedir):
 
 def plot_pcca(state_assignment, c_centers, savedir, dim_1=0, dim_2=1, \
               c_centers_s=6, cmap='gist_rainbow'):
-    
+    """Scatter cluster centres on two TICA dimensions, coloured by macrostate assignment."""
+
     n_states = len(np.unique(state_assignment))
     cmap = mpl.colormaps[f'{cmap}'].resampled(n_states)
     norm = colors.BoundaryNorm(list(range(0, n_states+1)), n_states, clip=True)
@@ -366,7 +379,12 @@ def plot_dihed_pie(spatial_counts, dihed_counts,
                    dfg_spatial_colors = dfg_spatial_colors,
                    dfg_dihed_colors = dfg_dihed_colors,
                    figsize=(6,6), title='', fontsize=12, savedir=None):
-    
+    """Nested pie chart of DFG conformations: inner ring spatial groups, outer ring dihedral sub-clusters.
+
+    ``show_dihed`` selects the outer ring: 'all' (labelled), 'no_labels', or otherwise spatial-only.
+    Labels below 5% of their ring are hidden. Saved to ``savedir`` when given.
+    """
+
     spatial_cluster_labels = ['noise', 'DFG-in', 'DFG-inter', 'DFG-out']
     dihed_cluster_labels = ['noise', 
                             'noise', 'BLAminus', 'BLAplus', 'ABAminus', 'BLBminus', 'BLBplus', 'BLBtrans', 

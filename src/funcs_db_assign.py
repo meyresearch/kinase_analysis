@@ -1,6 +1,6 @@
+"""Assign kinase conformations to Dunbrack DFG spatial and dihedral clusters."""
+
 import numpy as np
-from scipy.spatial.distance import cdist
-from typing import *
 import pickle
 import hdbscan
 from funcs_featurise import dbdist_featuriser, dbdihed_featuriser
@@ -81,6 +81,21 @@ def assign_dfg_spatial_hdbscan(dbdist, hdbscan_model, mapping=None, confidence_t
 
 
 def assign_ramachandran_codes(dbdihed_list):
+    """Assign per-frame 4-letter Ramachandran codes for the X, D, F residues and DFG-Phe χ1.
+
+    Each residue's (phi, psi) is labelled A/B/L by nearest canonical basin (else 'X'),
+    and χ1 as plus/minus/trans, giving a 4-character code per frame.
+
+    Parameters
+    ----------
+    dbdihed_list : list of ndarray
+        Per-trajectory dihedral arrays as produced by ``dbdihed_featuriser``.
+
+    Returns
+    -------
+    tuple
+        ``(x_distances, d_distances, f_distances, f_chi_distances, codes)`` per trajectory.
+    """
     # Get 4 letter codes for X, D, F Ramachandran assignment
 
     centroids = {
@@ -91,20 +106,24 @@ def assign_ramachandran_codes(dbdihed_list):
     threshold = np.pi
 
     def angular_diff(a, b):
+        """Signed smallest difference between angles a and b, in radians."""
         return np.arctan2(np.sin(a - b), np.cos(a - b))
-    
+
     def ramachandran_distance(phi, psi, centroid):
+        """Euclidean (phi, psi) distance to a centroid, wrapped on the circle."""
         dphi  = angular_diff(phi, centroid[0])
         dpsi  = angular_diff(psi, centroid[1])
         return np.sqrt(dphi**2 + dpsi**2)
-    
+
     def distances_to_centroids(phi, psi, centroids):
+        """Distance from (phi, psi) to each named centroid."""
         return {
             name: ramachandran_distance(phi, psi, center)
             for name, center in centroids.items()
         }
-    
+
     def get_codes(distance_dict, threshold, default = 'X'):
+        """Label each frame by its nearest centroid, or ``default`` if beyond ``threshold``."""
         labels = list(distance_dict.keys())
         distance_arrays = [np.asarray(distance_dict[label]) for label in labels]
 
